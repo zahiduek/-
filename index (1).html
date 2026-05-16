@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a5c36" />
+<title>ממחזרים נכון ♻️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800;900&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#0a5c36;
+    --bg-2:#0d7a47;
+    --cream:#fdf6e3;
+    --ink:#0b2e1c;
+    --orange:#ff7a1a;
+    --blue:#1e90ff;
+    --green:#2ecc40;
+    --brown:#8b5a2b;
+    --shadow:0 8px 0 rgba(0,0,0,.18), 0 14px 30px rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;min-height:100%;}
+  body{
+    font-family:"Heebo",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #1aa55f55, transparent),
+      radial-gradient(900px 500px at -10% 110%, #ffd76633, transparent),
+      linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment:fixed;
+    overflow-x:hidden;
+  }
+  /* floating background emojis */
+  .bg-emojis{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.12;font-size:42px;}
+  .bg-emojis span{position:absolute;animation:float 14s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(8deg)}}
+  .app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:18px 16px 60px;}
+  header{
+    text-align:center;color:var(--cream);padding:18px 8px 8px;
+  }
+  header h1{
+    font-family:"Rubik Mono One",sans-serif;font-weight:400;
+    font-size:34px;letter-spacing:.5px;margin:6px 0 6px;line-height:1.05;
+    text-shadow:0 4px 0 rgba(0,0,0,.25);
+  }
+  header p{margin:0;opacity:.92;font-weight:600;font-size:15px;}
+  .credit{margin-top:8px;font-size:13px;opacity:.85}
+  .credit b{background:#ffd766;color:#0b2e1c;padding:2px 8px;border-radius:999px;font-weight:800}
+
+  .card{
+    background:var(--cream);border-radius:24px;padding:18px;
+    box-shadow:var(--shadow);margin-top:18px;
+    border:3px solid #0b2e1c14;
+  }
+  .bigbtn{
+    width:100%;border:none;cursor:pointer;
+    background:#0b2e1c;color:#fdf6e3;
+    font-family:inherit;font-weight:800;font-size:20px;
+    padding:18px 14px;border-radius:18px;
+    box-shadow:0 6px 0 #00000033;
+    transition:transform .08s ease;
+  }
+  .bigbtn:active{transform:translateY(3px);box-shadow:0 3px 0 #00000033}
+  .bigbtn.secondary{background:#fff;color:#0b2e1c;border:3px solid #0b2e1c;box-shadow:0 6px 0 #0b2e1c33;margin-top:10px;}
+
+  .bins{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+  .bin{
+    background:#fff;border-radius:16px;padding:12px 6px;text-align:center;
+    border:3px solid transparent;font-weight:700;font-size:12px;line-height:1.15;
+    transition:transform .15s ease;
+  }
+  .bin .dot{font-size:28px;display:block;margin-bottom:4px}
+  .bin.orange{border-color:var(--orange);color:#a04300}
+  .bin.blue{border-color:var(--blue);color:#0b4f99}
+  .bin.green{border-color:var(--green);color:#1a6a1f}
+  .bin.brown{border-color:var(--brown);color:#5a3a1a}
+  .bin.match{transform:scale(1.06);box-shadow:0 0 0 4px #ffd766}
+
+  /* scanner */
+  #reader{width:100%;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#000;position:relative}
+  #reader video{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important}
+  #reader > div{border:none!important}
+  #reader__scan_region{background:transparent!important}
+  #reader__scan_region img{display:none!important}
+  #reader__dashboard{display:none!important}
+  .frame{position:absolute;inset:14%;border:3px dashed #fdf6e3;border-radius:14px;pointer-events:none}
+  .tap-start{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:#fdf6e3;font-weight:800;font-size:18px;text-align:center;
+    background:rgba(0,0,0,.5);cursor:pointer;z-index:2;padding:20px;
+  }
+  .hint{text-align:center;color:#0b2e1c;font-weight:700;margin-top:10px;font-size:14px}
+
+  .row{display:flex;gap:10px;align-items:center}
+  input[type="text"]{
+    flex:1;padding:14px 16px;border-radius:14px;
+    border:3px solid #0b2e1c22;font-family:inherit;font-size:18px;
+    background:#fff;outline:none;font-weight:600;text-align:center;letter-spacing:2px;
+  }
+  input[type="text"]:focus{border-color:#0b2e1c}
+
+  .back{
+    background:transparent;border:none;color:var(--cream);
+    font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;
+    padding:8px 4px;display:inline-flex;align-items:center;gap:6px;
+  }
+
+  /* result */
+  .product{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+  .product img{width:84px;height:84px;border-radius:14px;object-fit:cover;background:#eee;border:3px solid #0b2e1c14}
+  .product .ph{width:84px;height:84px;border-radius:14px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:36px}
+  .product h2{margin:0;font-size:18px;line-height:1.2}
+  .product .brand{font-size:13px;opacity:.7;margin-top:4px;font-weight:600}
+
+  .verdict{
+    border-radius:20px;padding:24px 18px;text-align:center;color:#fff;
+    box-shadow:inset 0 -6px 0 rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.18);
+    margin-top:6px;
+  }
+  .verdict.orange{background:linear-gradient(180deg,#ff9842,#ff7a1a)}
+  .verdict.blue{background:linear-gradient(180deg,#3aa3ff,#1e7ad6)}
+  .verdict.green{background:linear-gradient(180deg,#3edd55,#22a834)}
+  .verdict.brown{background:linear-gradient(180deg,#a06d36,#7a4d22)}
+  .verdict .label{font-size:13px;text-transform:uppercase;letter-spacing:2px;opacity:.92;font-weight:800}
+  .verdict h3{margin:6px 0 0;font-size:34px;font-weight:900;text-shadow:0 3px 0 rgba(0,0,0,.18)}
+  .verdict .em{font-size:72px;margin:8px 0;line-height:1;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18))}
+
+  .meta{margin-top:14px;font-size:14px;background:#fff;border-radius:14px;padding:12px;border:3px solid #0b2e1c14}
+  .meta b{color:#0b2e1c}
+
+  .loader{
+    text-align:center;padding:30px 10px;
+  }
+  .loader .spin{
+    width:54px;height:54px;border:5px solid #0b2e1c22;border-top-color:#0b2e1c;
+    border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .hidden{display:none!important}
+
+  .alert{
+    background:#fff3cd;border:3px solid #ffd766;color:#5a4500;
+    border-radius:14px;padding:12px;font-weight:700;font-size:14px;margin-bottom:12px;
+  }
+
+  .pill{display:inline-block;background:#0b2e1c;color:#fdf6e3;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;margin:2px 2px 0 0}
+
+  .source{font-size:11px;color:#0b2e1c88;text-align:center;margin-top:14px}
+</style>
+</head>
+<body>
+  <div class="bg-emojis" id="bgEmojis"></div>
+  <div class="app">
+
+    <header>
+      <div style="font-size:42px">♻️</div>
+      <h1>ממחזרים נכון</h1>
+      <p>סרוק ברקוד — גלה לאיזה פח לזרוק</p>
+      <div class="credit">✨ <b>ניתאי דואק</b> ✨</div>
+    </header>
+
+    <!-- HOME -->
+    <section id="home" class="card">
+      <button class="bigbtn" onclick="goto('scan')">📷 סרוק ברקוד עכשיו</button>
+      <button class="bigbtn secondary" onclick="goto('manual')">✏️ הקלד ברקוד ידנית</button>
+
+      <div class="bins" style="margin-top:18px">
+        <div class="bin orange"><span class="dot">🟠</span>פלסטיק<br>+ מתכות</div>
+        <div class="bin blue"><span class="dot">🔵</span>נייר<br>+ קרטון</div>
+        <div class="bin green"><span class="dot">🟢</span>זכוכית</div>
+        <div class="bin brown"><span class="dot">🟤</span>אורגני</div>
+      </div>
+    </section>
+
+    <!-- SCAN -->
+    <section id="scan" class="card hidden">
+      <button class="back" onclick="goto('home')">← חזרה</button>
+      <div id="reader">
+        <div class="frame"></div>
+        <div id="tapStart" class="tap-start hidden">👆 הקש להפעלת המצלמה</div>
+      </div>
+      <div id="scanError" class="alert hidden" style="margin-top:10px"></div>
+      <div class="hint">📦 קרב את האריזה · ☀️ ודא תאורה טובה</div>
+      <button class="bigbtn secondary" onclick="goto('manual')">✏️ אני מעדיף להקליד ידנית</button>
+    </section>
+
+    <!-- MANUAL -->
+    <section id="manual" class="card hidden">
+      <button class="back" onclick="goto('home')">← חזרה</button>
+      <h2 style="margin:6px 0 12px">הקלד ברקוד ידנית</h2>
+      <div class="row">
+        <input id="barcodeInput" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="729..." />
+      </div>
+      <button class="bigbtn" style="margin-top:14px" onclick="lookupManual()">🔍 חפש</button>
+    </section>
+
+    <!-- LOADING -->
+    <section id="loading" class="card hidden">
+      <div class="loader">
+        <div class="spin"></div>
+        <div style="font-weight:800;font-size:18px">בודק מוצר...</div>
+        <div style="opacity:.7;margin-top:4px">מחפש במאגרים העולמיים</div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="result" class="card hidden">
+      <button class="back" onclick="goto('home')">← חזרה</button>
+      <div id="resultContent"></div>
+      <button class="bigbtn" style="margin-top:14px" onclick="goto('scan')">📷 סרוק מוצר נוסף</button>
+    </section>
+
+    <!-- NOT FOUND -->
+    <section id="notfound" class="card hidden">
+      <button class="back" onclick="goto('home')">← חזרה</button>
+      <div style="text-align:center">
+        <div style="font-size:64px">🤔</div>
+        <h2 style="margin:6px 0">המוצר לא נמצא במאגר</h2>
+        <p id="nfBarcode" style="opacity:.7;margin:0 0 10px;font-weight:700"></p>
+        <p style="margin:0 0 14px">בחר את חומר האריזה ידנית:</p>
+      </div>
+      <div class="bins" style="grid-template-columns:repeat(2,1fr);gap:12px">
+        <div class="bin orange" onclick="manualPick('orange')" style="cursor:pointer;padding:18px 8px"><span class="dot">🟠</span>פלסטיק<br>+ מתכות</div>
+        <div class="bin blue"   onclick="manualPick('blue')"   style="cursor:pointer;padding:18px 8px"><span class="dot">🔵</span>נייר<br>+ קרטון</div>
+        <div class="bin green"  onclick="manualPick('green')"  style="cursor:pointer;padding:18px 8px"><span class="dot">🟢</span>זכוכית</div>
+        <div class="bin brown"  onclick="manualPick('brown')"  style="cursor:pointer;padding:18px 8px"><span class="dot">🟤</span>אורגני</div>
+      </div>
+      <button class="bigbtn" style="margin-top:14px" onclick="goto('scan')">📷 סרוק מוצר נוסף</button>
+      <button class="bigbtn secondary" onclick="goto('manual')">✏️ הקלד ברקוד אחר</button>
+    </section>
+
+  </div>
+
+<script>
+/* ============================================================
+   ממחזרים נכון — barcode lookup using Open*Facts databases
+   - Open Food Facts (food/drinks)
+   - Open Beauty Facts (cosmetics)
+   - Open Products Facts (general products)
+   ============================================================ */
+
+// background floating emojis
+(function bg(){
+  const emojis=['♻️','🍾','📦','🥤','🍶','🥫','📄','🔋','🌿','🧴','🪵','📰'];
+  const el=document.getElementById('bgEmojis');
+  for(let i=0;i<22;i++){
+    const s=document.createElement('span');
+    s.textContent=emojis[i%emojis.length];
+    s.style.left=Math.random()*100+'%';
+    s.style.top=Math.random()*100+'%';
+    s.style.animationDelay=(Math.random()*8)+'s';
+    s.style.animationDuration=(10+Math.random()*10)+'s';
+    el.appendChild(s);
+  }
+})();
+
+const screens=['home','scan','manual','loading','result','notfound'];
+function goto(name){
+  screens.forEach(s=>document.getElementById(s).classList.toggle('hidden',s!==name));
+  if(name==='home') lastResultCode = null;  // allow re-scanning anything after returning home
+  if(name==='scan') startScanner();
+  else stopScanner().catch(()=>{});
+  if(name==='manual') setTimeout(()=>document.getElementById('barcodeInput').focus(),100);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---------- Scanner (html5-qrcode) ---------- */
+let html5QrCode = null;
+let scannerActive = false;
+let lastResultCode = null;   // ignore this code on re-scan until a different one is seen
+let scanStartTime = 0;       // ignore scans for first 800ms after starting (avoids instant retrigger)
+
+function showScanError(msg){
+  const el = document.getElementById('scanError');
+  el.innerHTML = msg;
+  el.classList.remove('hidden');
+}
+function hideScanError(){
+  document.getElementById('scanError').classList.add('hidden');
+}
+
+async function startScanner(){
+  hideScanError();
+
+  if(typeof Html5Qrcode === 'undefined'){
+    showScanError('⚠️ ספריית הסריקה לא נטענה. בדוק חיבור לאינטרנט ורענן.');
+    return;
+  }
+
+  // ALWAYS fully tear down any previous instance first (fixes stuck-after-not-found)
+  await stopScanner();
+
+  // Clear the reader DOM completely
+  const readerEl = document.getElementById('reader');
+  readerEl.innerHTML = '<div class="frame"></div>';
+
+  try{
+    html5QrCode = new Html5Qrcode("reader", { verbose:false });
+
+    const config = {
+      fps: 10,
+      qrbox: function(viewfinderWidth, viewfinderHeight){
+        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        const size = Math.floor(minEdge * 0.7);
+        return { width: size, height: size };
+      },
+      aspectRatio: 1.0,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.QR_CODE,
+      ]
+    };
+
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      (decodedText) => {
+        const code = decodedText.replace(/\D/g,'');
+        if(!code || code.length<8) return;
+        if(!scannerActive) return;
+        // Skip the immediately-previous code so "scan again" doesn't re-fire on same product
+        if(code === lastResultCode) return;
+        // Brief grace period after starting
+        if(Date.now() - scanStartTime < 800) return;
+        scannerActive = false;
+        lastResultCode = code;
+        stopScanner().then(()=>lookupBarcode(code));
+      },
+      () => { /* ignore per-frame errors */ }
+    );
+    scannerActive = true;
+    scanStartTime = Date.now();
+
+  }catch(e){
+    console.error('Camera error:', e);
+    const errStr = (e && (e.message||e.toString())) || '';
+    let msg = '';
+    if(/NotAllowed|Permission|denied/i.test(errStr)){
+      msg = '🚫 <b>הדפדפן חוסם גישה למצלמה</b><br><br>' +
+            '<b>אנדרואיד (Chrome):</b><br>' +
+            '1. לחץ על אייקון המנעול 🔒 שמאלית לכתובת<br>' +
+            '2. הקש "הרשאות" / "Permissions"<br>' +
+            '3. הקש על "מצלמה" וסמן "אפשר"<br>' +
+            '4. רענן את הדף<br><br>' +
+            '<b>אייפון (Safari):</b><br>' +
+            '1. הגדרות → Safari → מצלמה<br>' +
+            '2. בחר "שאל" או "אפשר"<br>' +
+            '3. רענן את הדף';
+    } else if(/NotFound|DevicesNotFound/i.test(errStr)){
+      msg = '📷 לא נמצאה מצלמה במכשיר.';
+    } else if(/NotReadable|TrackStart|in use/i.test(errStr)){
+      msg = '📷 המצלמה תפוסה על ידי אפליקציה אחרת. סגור אפליקציות מצלמה ונסה שוב.';
+    } else if(/secure|https/i.test(errStr)){
+      msg = '🔒 גישה למצלמה דורשת חיבור מאובטח (HTTPS). ודא שהכתובת מתחילה ב-https://';
+    } else {
+      msg = '⚠️ ' + errStr + '<br><br>נסה דפדפן עדכני (Chrome/Safari) או הקלד ברקוד ידנית.';
+    }
+    showScanError(msg);
+  }
+}
+
+async function stopScanner(){
+  if(html5QrCode){
+    try{
+      if(scannerActive){ await html5QrCode.stop(); }
+    }catch(e){ /* ignore */ }
+    try{
+      await html5QrCode.clear();
+    }catch(e){ /* ignore */ }
+    html5QrCode = null;   // FULL reset - next start creates a fresh instance
+  }
+  scannerActive = false;
+}
+
+/* ---------- Manual input ---------- */
+function lookupManual(){
+  const code = document.getElementById('barcodeInput').value.replace(/\D/g,'');
+  if(code.length<6){ alert('ברקוד לא תקין'); return; }
+  lookupBarcode(code);
+}
+
+/* ---------- Barcode lookup ---------- */
+async function lookupBarcode(code){
+  goto('loading');
+
+  const FIELDS = 'product_name,product_name_he,generic_name,generic_name_he,brands,quantity,' +
+                 'image_front_small_url,image_small_url,image_url,' +
+                 'categories,categories_tags,packaging,packaging_tags,packaging_materials_tags,packagings';
+
+  // Multiple Open*Facts databases — cover food, drinks, cosmetics, household, pet
+  const sources = [
+    {name:'מאגר מזון',      url:`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+    {name:'מאגר קוסמטיקה',  url:`https://world.openbeautyfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+    {name:'מאגר מוצרים',    url:`https://world.openproductsfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+    {name:'מאגר מזון לחיות',url:`https://world.openpetfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+  ];
+
+  let found=null, sourceName='';
+  for(const s of sources){
+    try{
+      const r = await fetch(s.url, {headers:{'Accept':'application/json'}});
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j.status===1 && j.product && (j.product.product_name || j.product.product_name_he || j.product.brands || (j.product.categories_tags||[]).length)){
+        found = j.product;
+        sourceName = s.name;
+        break;
+      }
+    }catch(e){ console.warn(s.name, e); }
+  }
+
+  // Fallback 1: Open Food Facts search endpoint
+  if(!found){
+    try{
+      const r = await fetch(`https://world.openfoodfacts.org/api/v2/search?code=${code}&fields=${FIELDS}`, {headers:{'Accept':'application/json'}});
+      if(r.ok){
+        const j = await r.json();
+        if(j.products && j.products.length && (j.products[0].product_name||j.products[0].product_name_he||j.products[0].categories_tags)){
+          found = j.products[0];
+          sourceName = 'חיפוש במאגר';
+        }
+      }
+    }catch(e){ console.warn('search fallback', e); }
+  }
+
+  // Fallback 2: Hebrew (Israel) Open Food Facts subdomain
+  if(!found){
+    try{
+      const r = await fetch(`https://il.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`, {headers:{'Accept':'application/json'}});
+      if(r.ok){
+        const j = await r.json();
+        if(j.status===1 && j.product){
+          found = j.product;
+          sourceName = 'מאגר ישראל';
+        }
+      }
+    }catch(e){ console.warn('IL fallback', e); }
+  }
+
+  if(!found){
+    document.getElementById('nfBarcode').textContent='ברקוד: '+code;
+    window._lastBarcode=code;
+    goto('notfound');
+    return;
+  }
+
+  renderResult(found, code, sourceName);
+}
+
+/* ============================================================
+   CLASSIFICATION ENGINE  (weighted scoring)
+   Each signal adds points to a bin. Highest score wins.
+   This makes the app decide a bin for almost every product,
+   while still flagging low-confidence guesses.
+   ============================================================ */
+
+// 1. EXPLICIT PACKAGING-MATERIAL signals — strongest (weight 100)
+const MATERIAL_SIGNALS = [
+  {bin:'green',  w:100, re:/(^|[^a-z])(glass|verre|glas|zilumit|zchuchit)([^a-z]|$)|זכוכית/i},
+  {bin:'blue',   w:100, re:/(^|[^a-z])(paper|cardboard|carton-?board|kraft|corrugated|paperboard|papier|karton)([^a-z]|$)|קרטון|נייר/i},
+  {bin:'orange', w:100, re:/(^|[^a-z])(pet|hdpe|ldpe|pp|ps|pvc|plastic|plastique|polyethylene|polypropylene|polystyrene|nylon|acrylic|resin|tetra|tetrapak|tetra-?pak|tetra-?brik|brique|composite|aerosol)([^a-z]|$)|פלסטיק/i},
+  {bin:'orange', w:100, re:/(^|[^a-z])(aluminium|aluminum|steel|tin|tinplate|metal|metal-?can|aluminum-?can|canette|boite-?metal)([^a-z]|$)|מתכת|אלומיניום|פח-?שימורים/i},
+  {bin:'brown',  w:100, re:/(^|[^a-z])(wood|cork|bamboo|compostable|biodegradable|bois|liege)([^a-z]|$)/i},
+];
+
+// 2. PRODUCT-NAME / CATEGORY keyword dictionary  (weight 40-70)
+//    Covers the vast majority of supermarket products in Israel.
+const KEYWORD_SIGNALS = [
+  /* ---------- GREEN — glass (bottles & jars) ---------- */
+  {bin:'green', w:70, words:[
+    'wine','red wine','white wine','rose wine','beer','lager','ale','vodka','whisky','whiskey',
+    'champagne','prosecco','liqueur','rum','gin','tequila','brandy','cognac','arak','vermouth',
+    'יין','יין אדום','יין לבן','יין רוזה','בירה','לאגר','וודקה','ויסקי','שמפניה','פרוסקו',
+    'ליקר','רום',"ג'ין",'טקילה','ברנדי','קוניאק','ערק','וורמוט','משקה אלכוהולי','אלכוהול'
+  ]},
+  {bin:'green', w:55, words:[
+    'jam','marmalade','preserve','pickled','pickles','gherkin','honey','vinegar','tahini jar',
+    'olive','olives','caper','pesto jar','sauce jar','pasta sauce','tomato sauce jar',
+    'baby food jar','compote','syrup glass',
+    'ריבה','מרמלדה','חמוצים','מלפפון חמוץ','חמוץ','חרוסת','דבש','חומץ','טחינה בצנצנת',
+    'זית','זיתים','קייפרס','פסטו','רוטב בצנצנת','רוטב עגבניות','רסק בצנצנת','קומפוט',
+    'צנצנת','מיץ ענבים','מיץ בבקבוק זכוכית'
+  ]},
+  /* ---------- BLUE — paper & cardboard ---------- */
+  {bin:'blue', w:60, words:[
+    'cereal','cornflakes','corn flakes','muesli','granola','oats','oatmeal','porridge',
+    'cookie','cookies','biscuit','biscuits','cracker','crackers','wafer','wafers',
+    'tea bag','tea bags','teabag','tissue','tissues','napkin','napkins','toilet paper',
+    'kitchen paper','paper towel','paper towels','egg carton','egg box','sugar box',
+    'flour bag paper','pasta box','rice box','tea box','cardboard box','gift box',
+    'קורנפלקס','דגני בוקר','דגנים','גרנולה','מוזלי','שיבולת שועל','קוואקר','דייסה',
+    'עוגיות','עוגייה','עוגיה','ביסקוויט','קרקר','קרקרים','וופל','וופלים',
+    'שקיות תה','תיון','תיונים','ממחטות','ממחטה','מפיות','מפית','נייר טואלט',
+    'נייר סופג','מגבת נייר','קרטון ביצים','קופסת סוכר','קופסת קרטון','קופסה',
+    'אריזת קרטון','חבילת נייר','דפי נייר','מחברת','דף','עיתון','עיתונים'
+  ]},
+  /* ---------- ORANGE — metal cans ---------- */
+  {bin:'orange', w:60, words:[
+    'tuna','canned tuna','sardine','sardines','anchovy','canned corn','canned peas',
+    'canned beans','canned soup','canned tomato','canned fruit','condensed milk',
+    'corned beef','spam','cat food can','dog food can','energy drink can','beer can','soda can',
+    'טונה','שימורי טונה','סרדינים','סרדין','אנשובי','תירס משומר','תירס בקופסה',
+    'אפונה משומרת','שעועית בקופסה','מרק שימורים','רסק עגבניות בקופסה','שימורי פרי',
+    'חלב מרוכז','בשר משומר','לוף','פחית','פחית משקה','פחית בירה','קופסת שימורים','שימורים'
+  ]},
+  /* ---------- ORANGE — plastic bottles / packaging ---------- */
+  {bin:'orange', w:50, words:[
+    'mineral water','spring water','still water','sparkling water','soda','cola','soft drink',
+    'soft-drink','juice bottle','ice tea','energy drink','sports drink','milk bottle',
+    'yogurt','yoghurt','cottage','sour cream','cream cheese','margarine tub','butter tub',
+    'shampoo','conditioner','hair conditioner','lotion','body wash','shower gel','liquid soap',
+    'hand soap','dish soap','detergent','laundry detergent','fabric softener','bleach','cleaner',
+    'spray','deodorant','toothpaste','sunscreen','ketchup bottle','mayonnaise','mustard bottle',
+    'oil bottle','plastic bottle','plastic cup','plastic tray','snack bag','chips','crisps',
+    'wafer bag','candy bag','chocolate bar wrapper','plastic wrap','cling film','disposable',
+    'מים מינרליים','מים','מים בטעמים','מים מוגזים','קולה','סודה','משקה קל','משקה מוגז',
+    'מיץ','מיץ בבקבוק','אייס טי','משקה אנרגיה','משקה איזוטוני','בקבוק חלב','חלב בקרטון',
+    'יוגורט','יוגורט בכוס','קוטג','שמנת','שמנת חמוצה','גבינה לבנה','גבינת שמנת',
+    'מרגרינה','חמאה בקופסה','שמפו','מרכך','קונדישינר','קרם גוף','קרם ידיים','ג\'ל רחצה',
+    'סבון נוזלי','סבון ידיים','נוזל כלים','אבקת כביסה','מרכך כביסה','אקונומיקה','מנקה',
+    'חומר ניקוי','ניקוי','ספריי','דאודורנט','משחת שיניים','קרם הגנה','קטשופ','מיונז',
+    'חרדל','שמן','בקבוק שמן','בקבוק פלסטיק','כוס פלסטיק','מגש פלסטיק','שקית חטיף',
+    'חטיף','חטיפים','ביסלי','במבה','צ\'יפס','תפוצ\'יפס','חטיף תירס','שקית','אריזת פלסטיק',
+    'ניילון נצמד','חד פעמי','כלים חד פעמיים'
+  ]},
+  /* ---------- BROWN — organic / fresh ---------- */
+  {bin:'brown', w:55, words:[
+    'fresh fruit','fresh vegetable','fresh vegetables','banana','apple','tomato','cucumber',
+    'potato','onion','carrot','lettuce','pepper fresh','orange fruit','lemon fresh','herbs fresh',
+    'פרי טרי','ירק טרי','ירקות טריים','פירות טריים','בננה','תפוח עץ','עגבניה','עגבנייה',
+    'מלפפון','תפוח אדמה','בצל','גזר','חסה','פלפל','לימון טרי','עשבי תיבול טריים',
+    'קליפות','שאריות מזון','פסולת אורגנית','גזם'
+  ]},
+];
+
+// 3. OFF CATEGORY tags → bin  (weight 35-45; lower than name keywords)
+const CATEGORY_SIGNALS = [
+  {bin:'green',  w:45, re:/\b(wines|red-wines|white-wines|rose-wines|sparkling-wines|champagnes|beers|lagers|ales|spirits|vodkas|whiskies|whiskeys|rums|gins|tequilas|brandies|liqueurs|cocktails|alcoholic-beverages)\b/i},
+  {bin:'green',  w:42, re:/\b(jams|fruit-preserves|preserves|honeys|vinegars|pickled-vegetables|pickles|sauces-in-jars|marmalades|olives|capers|tahini|spreads-in-jars)\b/i},
+  {bin:'blue',   w:42, re:/\b(breakfast-cereals|muesli|granolas|oat-flakes|cornflakes|porridges)\b/i},
+  {bin:'blue',   w:42, re:/\b(biscuits|cookies|cookies-and-biscuits|crackers|cereal-bars|wafers|tea-bags|teas|herbal-teas|infusions|sugars|flours)\b/i},
+  {bin:'orange', w:45, re:/\b(canned-foods|canned-fish|canned-vegetables|canned-fruits|canned-meats|tuna-in-cans|sardines|sweet-corn|legumes-canned|condensed-milks|preserved-fish)\b/i},
+  {bin:'orange', w:38, re:/\b(yogurts|yoghurts|dairy-desserts|cream-cheeses|sour-creams|cottage-cheeses|plant-based-yogurts|margarines)\b/i},
+  {bin:'orange', w:38, re:/\b(sodas|cola-drinks|soft-drinks|energy-drinks|sport-drinks|sparkling-drinks|fruit-juices|nectars|iced-teas)\b/i},
+  {bin:'orange', w:38, re:/\b(waters|mineral-waters|sparkling-waters|flavored-waters|spring-waters)\b/i},
+  {bin:'orange', w:38, re:/\b(chips|crisps|snacks|salty-snacks|sweet-snacks|chewing-gums|candies|chocolate-candies)\b/i},
+  {bin:'orange', w:40, re:/\b(cleaning-products|laundry-detergents|dishwashing-products|fabric-softeners|bleaches|shampoos|conditioners|body-washes|shower-gels|soaps|cosmetics|deodorants|toothpastes|sunscreens|lotions|creams|skin-care|hair-care|hygiene)\b/i},
+  {bin:'brown',  w:48, re:/\b(fresh-foods|fresh-vegetables|fresh-fruits|herbs-fresh|raw-fruits|raw-vegetables|unprocessed-fruits|unprocessed-vegetables)\b/i},
+];
+
+/* ---------- The classifier ---------- */
+function classifyProduct(p, name, brand){
+  const scores = {orange:0, blue:0, green:0, brown:0};
+  const reasons = [];
+
+  // Build the packaging-tag text blob
+  const pkgTags = []
+    .concat(p.packaging_materials_tags||[])
+    .concat(p.packaging_tags||[])
+    .concat(p.packagings ? p.packagings.flatMap(x=>[x.material,x.shape].filter(Boolean)) : [])
+    .concat(p.packaging ? [p.packaging] : []);
+  const pkgText = pkgTags.join(' ').toLowerCase();
+
+  const catTags = (p.categories_tags||[]);
+  const catText = catTags.join(' ').toLowerCase();
+
+  const nameText = ((name||'') + ' ' + (brand||'') + ' ' +
+                    (p.generic_name||'') + ' ' + (p.generic_name_he||'') + ' ' +
+                    (p.categories||'')).toLowerCase();
+
+  // 1. explicit packaging material (strongest)
+  let hasExplicit = false;
+  for(const s of MATERIAL_SIGNALS){
+    if(pkgText && s.re.test(pkgText)){ scores[s.bin]+=s.w; hasExplicit=true; reasons.push('אריזה'); }
+  }
+
+  // 2. name / keyword dictionary
+  let hasName = false;
+  for(const s of KEYWORD_SIGNALS){
+    for(const w of s.words){
+      if(nameText.includes(w.toLowerCase())){ scores[s.bin]+=s.w; hasName=true; reasons.push('שם המוצר'); break; }
+    }
+  }
+
+  // 3. category tags
+  let hasCat = false;
+  for(const s of CATEGORY_SIGNALS){
+    if(catText && s.re.test(catText)){ scores[s.bin]+=s.w; hasCat=true; reasons.push('קטגוריה'); }
+  }
+
+  // Pick the winner
+  let bestBin=null, bestScore=0;
+  for(const b of ['orange','blue','green','brown']){
+    if(scores[b] > bestScore){ bestScore=scores[b]; bestBin=b; }
+  }
+  if(!bestBin || bestScore===0) return null;
+
+  // Confidence: explicit packaging = high; strong single source = medium; weak = low
+  let confidence = 'low';
+  if(hasExplicit) confidence = 'high';
+  else if(bestScore >= 55) confidence = 'medium';
+  else confidence = 'low';
+
+  const via = hasExplicit ? 'תגי האריזה במאגר'
+            : hasName ? 'שם וסוג המוצר'
+            : 'קטגוריית המוצר';
+
+  return { bin:bestBin, confidence, via, scores };
+}
+
+const BIN_INFO = {
+  orange:{emoji:'🟠',name:'פח כתום',sub:'פלסטיק + מתכות',cls:'orange',
+    tips:[
+      'רוקן את האריזה משאריות',
+      'שטוף קלות אם צריך',
+      'שטח בקבוקים כדי לחסוך מקום',
+      'הפרד פקקים אם הם מחומר אחר',
+    ]},
+  blue:{emoji:'🔵',name:'פח כחול',sub:'נייר + קרטון',cls:'blue',
+    tips:[
+      'שטח קופסאות קרטון',
+      'הסר סלוטייפ ומדבקות גדולות',
+      'אל תזרוק נייר רטוב או משומן',
+      'הוצא ניירונים מתוך מעטפות חלון',
+    ]},
+  green:{emoji:'🟢',name:'פח זכוכית',sub:'בקבוקים וצנצנות',cls:'green',
+    tips:[
+      'רוקן ושטוף את הצנצנת',
+      'הפרד את המכסה (בדרך כלל מתכת → פח כתום)',
+      'בקבוקי בירה/יין בפקדון? החזר לחנות',
+      'אל תזרוק נורות או חלונות שבורים',
+    ]},
+  brown:{emoji:'🟤',name:'פח אורגני',sub:'פסולת רטובה',cls:'brown',
+    tips:[
+      'קליפות, שאריות אוכל, גזם',
+      'אל תזרוק שקיות פלסטיק (גם לא "מתכלות")',
+      'בלי עצמות גדולות או שמן',
+      'נייר סופג ספוג מותר במקצת ערים',
+    ]},
+};
+
+/* ---------- Result rendering ---------- */
+function renderResult(p, code, source){
+  const name = p.product_name_he || p.product_name || p.generic_name_he || p.generic_name || 'מוצר ללא שם';
+  const brand = p.brands || '';
+  const img = p.image_front_small_url || p.image_small_url || p.image_url || '';
+
+  // ONE smart classifier — scores all signals, picks the best bin
+  const result = classifyProduct(p, name, brand);
+
+  const bin = result?.bin;
+  const info = bin ? BIN_INFO[bin] : null;
+  const confidence = result?.confidence;
+  const via = result?.via;
+
+  const html = `
+    <div class="product">
+      ${img ? `<img src="${img}" alt="" onerror="this.outerHTML='<div class=ph>📦</div>'">` : `<div class="ph">📦</div>`}
+      <div>
+        <h2>${escapeHtml(name)}</h2>
+        ${brand?`<div class="brand">${escapeHtml(brand)}</div>`:''}
+        <div style="margin-top:6px"><span class="pill">${code}</span></div>
+      </div>
+    </div>
+
+    ${info ? `
+      <div class="verdict ${info.cls}">
+        <div class="label">זרוק לפח</div>
+        <div class="em">${info.emoji}</div>
+        <h3>${info.name}</h3>
+        <div style="opacity:.95;margin-top:4px;font-size:16px">${info.sub}</div>
+        ${confidence==='high'
+          ? `<div style="margin-top:10px;font-size:12px;opacity:.9;background:rgba(255,255,255,.2);padding:6px 12px;border-radius:8px;display:inline-block">✓ זוהה בוודאות לפי ${via}</div>`
+          : `<div style="margin-top:10px;font-size:12px;opacity:.9;background:rgba(0,0,0,.18);padding:6px 12px;border-radius:8px;display:inline-block">המלצה לפי ${via} · בדוק את האריזה בעצמך</div>`}
+      </div>
+      <div class="meta">
+        <b>✅ איך מכינים לפח:</b>
+        <ul style="margin:8px 0 0;padding-inline-start:20px">
+          ${info.tips.map(t=>`<li>${t}</li>`).join('')}
+        </ul>
+      </div>
+      <div style="margin-top:10px;text-align:center;font-size:13px;color:#0b2e1c99">
+        החומר שונה? <a href="#" onclick="event.preventDefault();showPickerBelow()" style="color:#0b2e1c;font-weight:800;text-decoration:underline">בחר פח ידנית</a>
+      </div>
+      <div id="pickerBelow" class="hidden" style="margin-top:10px">
+        <div class="bins" style="grid-template-columns:repeat(2,1fr);gap:10px">
+          <div class="bin orange" onclick="manualPick('orange')" style="cursor:pointer;padding:14px 6px"><span class="dot">🟠</span>פלסטיק + מתכות</div>
+          <div class="bin blue"   onclick="manualPick('blue')"   style="cursor:pointer;padding:14px 6px"><span class="dot">🔵</span>נייר + קרטון</div>
+          <div class="bin green"  onclick="manualPick('green')"  style="cursor:pointer;padding:14px 6px"><span class="dot">🟢</span>זכוכית</div>
+          <div class="bin brown"  onclick="manualPick('brown')"  style="cursor:pointer;padding:14px 6px"><span class="dot">🟤</span>אורגני</div>
+        </div>
+      </div>
+    ` : `
+      <div class="alert">🔎 זיהיתי את המוצר אך לא הצלחתי לקבוע את סוג האריזה. בחר את הפח לפי מה שאתה רואה:</div>
+      <div class="bins" style="grid-template-columns:repeat(2,1fr);gap:12px">
+        <div class="bin orange" onclick="manualPick('orange')" style="cursor:pointer;padding:18px 8px"><span class="dot">🟠</span>פלסטיק + מתכות</div>
+        <div class="bin blue"   onclick="manualPick('blue')"   style="cursor:pointer;padding:18px 8px"><span class="dot">🔵</span>נייר + קרטון</div>
+        <div class="bin green"  onclick="manualPick('green')"  style="cursor:pointer;padding:18px 8px"><span class="dot">🟢</span>זכוכית</div>
+        <div class="bin brown"  onclick="manualPick('brown')"  style="cursor:pointer;padding:18px 8px"><span class="dot">🟤</span>אורגני</div>
+      </div>
+    `}
+
+    <div class="source">מקור: ${source}</div>
+  `;
+  document.getElementById('resultContent').innerHTML = html;
+  window._lastBarcode = code;
+  goto('result');
+}
+
+function showPickerBelow(){
+  document.getElementById('pickerBelow').classList.remove('hidden');
+}
+
+function manualPick(bin){
+  const info = BIN_INFO[bin];
+  document.getElementById('resultContent').innerHTML = `
+    <div class="verdict ${info.cls}">
+      <div class="label">זרוק ל</div>
+      <div class="em">${info.emoji}</div>
+      <h3>${info.name}</h3>
+      <div style="opacity:.95;margin-top:4px">${info.sub}</div>
+    </div>
+    <div class="meta">
+      <b>✅ איך מכינים לפח:</b>
+      <ul style="margin:8px 0 0;padding-inline-start:20px">
+        ${info.tips.map(t=>`<li>${t}</li>`).join('')}
+      </ul>
+    </div>
+    <div class="source">בחירה ידנית · ברקוד: ${window._lastBarcode||'—'}</div>
+  `;
+  goto('result');
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+// allow Enter in manual input
+document.getElementById('barcodeInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter') lookupManual();
+});
+</script>
+</body>
+</html>
