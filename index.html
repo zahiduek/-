@@ -707,59 +707,88 @@ async function lookupBarcode(code){
                  'image_front_small_url,image_small_url,image_url,' +
                  'categories,categories_tags,packaging,packaging_tags,packaging_materials_tags,packagings';
 
-  // Multiple Open*Facts databases — cover food, drinks, cosmetics, household, pet
-  const sources = [
-    {name:'מאגר מזון',      url:`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
-    {name:'מאגר קוסמטיקה',  url:`https://world.openbeautyfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
-    {name:'מאגר מוצרים',    url:`https://world.openproductsfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
-    {name:'מאגר מזון לחיות',url:`https://world.openpetfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+  // Helper: normalize different APIs to the same shape
+  const normalize = (raw, source) => raw ? ({...raw, _source: source}) : null;
+
+  // ---- Open Food Facts family (covers food, beauty, household, pet) ----
+  const offFamily = [
+    {name:'מאגר מזון',       url:`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+    {name:'מאגר ישראל',      url:`https://il.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+    {name:'מאגר קוסמטיקה',   url:`https://world.openbeautyfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+    {name:'מאגר מוצרים',     url:`https://world.openproductsfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
+    {name:'מאגר מזון לחיות', url:`https://world.openpetfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
   ];
 
-  let found=null, sourceName='';
-  for(const s of sources){
-    try{
-      const r = await fetch(s.url, {headers:{'Accept':'application/json'}});
-      if(!r.ok) continue;
-      const j = await r.json();
-      if(j.status===1 && j.product && (j.product.product_name || j.product.product_name_he || j.product.brands || (j.product.categories_tags||[]).length)){
-        found = j.product;
+  // Try all Open*Facts in PARALLEL (fastest wins, more reliable)
+  let found = null, sourceName = '';
+  try{
+    const results = await Promise.allSettled(
+      offFamily.map(s => fetch(s.url, {headers:{'Accept':'application/json'}})
+        .then(r => r.ok ? r.json() : null)
+        .then(j => ({s, j})))
+    );
+    for(const r of results){
+      if(r.status !== 'fulfilled' || !r.value) continue;
+      const {s, j} = r.value;
+      if(j && j.status === 1 && j.product &&
+         (j.product.product_name || j.product.product_name_he || j.product.brands || (j.product.categories_tags||[]).length)){
+        found = normalize(j.product, s.name);
         sourceName = s.name;
         break;
       }
-    }catch(e){ console.warn(s.name, e); }
-  }
+    }
+  }catch(e){ console.warn('OFF family error', e); }
 
-  // Fallback 1: Open Food Facts search endpoint
+  // ---- UPCitemdb (free trial endpoint, no key) — covers MUCH MORE products ----
   if(!found){
     try{
-      const r = await fetch(`https://world.openfoodfacts.org/api/v2/search?code=${code}&fields=${FIELDS}`, {headers:{'Accept':'application/json'}});
+      const r = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${code}`, {
+        headers:{'Accept':'application/json'}
+      });
       if(r.ok){
         const j = await r.json();
-        if(j.products && j.products.length && (j.products[0].product_name||j.products[0].product_name_he||j.products[0].categories_tags)){
-          found = j.products[0];
-          sourceName = 'חיפוש במאגר';
+        if(j && j.items && j.items.length){
+          const it = j.items[0];
+          // Map UPCitemdb format → our format
+          found = {
+            product_name: it.title || '',
+            generic_name: it.description || '',
+            brands: it.brand || '',
+            image_front_small_url: (it.images && it.images[0]) || '',
+            categories: it.category || '',
+            categories_tags: it.category ? [it.category.toLowerCase().replace(/\s+/g,'-')] : [],
+            packaging: '',
+            packaging_tags: [],
+            packaging_materials_tags: [],
+            _source: 'UPCitemdb'
+          };
+          sourceName = 'מאגר עולמי (UPCitemdb)';
+        }
+      }
+    }catch(e){ console.warn('UPCitemdb error', e); }
+  }
+
+  // ---- Last resort: Open Food Facts SEARCH endpoint ----
+  if(!found){
+    try{
+      const r = await fetch(`https://world.openfoodfacts.org/api/v2/search?code=${code}&fields=${FIELDS}`,
+                            {headers:{'Accept':'application/json'}});
+      if(r.ok){
+        const j = await r.json();
+        if(j.products && j.products.length){
+          const p = j.products[0];
+          if(p.product_name || p.product_name_he || (p.categories_tags||[]).length){
+            found = normalize(p, 'חיפוש במאגר');
+            sourceName = 'חיפוש במאגר';
+          }
         }
       }
     }catch(e){ console.warn('search fallback', e); }
   }
 
-  // Fallback 2: Hebrew (Israel) Open Food Facts subdomain
   if(!found){
-    try{
-      const r = await fetch(`https://il.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`, {headers:{'Accept':'application/json'}});
-      if(r.ok){
-        const j = await r.json();
-        if(j.status===1 && j.product){
-          found = j.product;
-          sourceName = 'מאגר ישראל';
-        }
-      }
-    }catch(e){ console.warn('IL fallback', e); }
-  }
-
-  if(!found){
-    document.getElementById('nfBarcode').textContent='ברקוד: '+code;
-    window._lastBarcode=code;
+    document.getElementById('nfBarcode').textContent = 'ברקוד: ' + code;
+    window._lastBarcode = code;
     goto('notfound');
     return;
   }
@@ -850,6 +879,41 @@ const KEYWORD_SIGNALS = [
     'פרי טרי','ירק טרי','ירקות טריים','פירות טריים','בננה','תפוח עץ','עגבניה','עגבנייה',
     'מלפפון','תפוח אדמה','בצל','גזר','חסה','פלפל','לימון טרי','עשבי תיבול טריים',
     'קליפות','שאריות מזון','פסולת אורגנית','גזם'
+  ]},
+  /* ---------- ISRAELI BRANDS — product-specific (when full product name isn't enough) ---------- */
+  /* Glass-bottled drinks */
+  {bin:'green', w:50, words:[
+    'goldstar','maccabee','heineken','carlsberg','tuborg','corona','stella','leffe',
+    'גולדסטאר','גולד סטאר','מכבי','קרלסברג','טובורג','סטלה','הייניקן','שטראוס יין','יקב','כרמל','ברקן','גולן','תשבי','דלתון'
+  ]},
+  /* Plastic bottles & cartons (orange) */
+  {bin:'orange', w:48, words:[
+    'tnuva','strauss','tara','yotvata','prigat','tapuzina','spring','neviot','eden','jump',
+    'coca-cola','pepsi','sprite','fanta','7up','nestea','schweppes',
+    'תנובה','שטראוס','תארה','יוטבתה','פריגת','תפוזינה','ספרינג','נביעות','מי עדן','מי עין גדי',
+    "ג'אמפ",'קוקה קולה','פפסי','ספרייט','פאנטה','שוופס','נסטי','קריסטל','טרופית'
+  ]},
+  /* Snacks, chips, plastic-wrapped (orange) */
+  {bin:'orange', w:45, words:[
+    'bamba','bisli','doritos','cheetos','lays','pringles','apropo','kif kef','klik',
+    'במבה','ביסלי','דוריטוס',"צ'יטוס",'לייס','פרינגלס','אפרופו','כיף כף','קליק','אחלה','מנדבורנה','חטיף נוגט'
+  ]},
+  /* Cosmetics / cleaning — plastic */
+  {bin:'orange', w:45, words:[
+    'sano','badin','st moritz','dove','nivea','garnier','loreal','pantene','head shoulders','axe',
+    'fairy','ariel','persil','vanish','sodasan','sodastream',
+    'סנו','באדין','דאב','ניוואה','גרניה','לוריאל','פנטן','האד אנד שולדרס','אקס',
+    'פיירי','אריאל','פרסיל','וניש','ולוט','סודה סטרים','סודאסטרים'
+  ]},
+  /* Cereals / cookies — cardboard (blue) */
+  {bin:'blue', w:45, words:[
+    'osem','elite','telma','kelloggs','nestle cereal','tnuva cereal','quaker',
+    'אסם','עלית','תלמה','קלוגס','קוואקר','דגני בוקר תלמה','קליק עוגיות'
+  ]},
+  /* Yogurt / dairy plastic cups */
+  {bin:'orange', w:45, words:[
+    'danone','muller','yoplait','activia','dani','milki','milky',
+    'דנונה','מולר',"יופלה",'אקטיביה','דני','מילקי','מולר','גיל','שוקו בשקית'
   ]},
 ];
 
