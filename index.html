@@ -313,6 +313,21 @@
 
   .source{font-size:11px;color:#0b2e1c88;text-align:center;margin-top:14px}
 
+  /* Quick category picker on not-found screen */
+  .quick-cats{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px;
+  }
+  .qc{
+    background:#fff;border:3px solid #0b2e1c14;border-radius:14px;
+    padding:14px 8px;text-align:center;cursor:pointer;
+    font-weight:700;font-size:13px;line-height:1.2;color:#0b2e1c;
+    display:flex;align-items:center;gap:10px;justify-content:flex-start;
+    transition:transform .15s, border-color .2s, box-shadow .2s;
+  }
+  .qc:hover{transform:translateY(-2px);border-color:#0b2e1c;box-shadow:0 6px 12px rgba(0,0,0,.1)}
+  .qc:active{transform:translateY(0)}
+  .qc-emoji{font-size:32px;line-height:1;flex-shrink:0}
+
   /* Reduced motion - respect user's accessibility preference */
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{
@@ -398,17 +413,55 @@
     <section id="notfound" class="card hidden">
       <button class="back" onclick="goto('home')">← חזרה</button>
       <div style="text-align:center">
-        <div style="font-size:64px">🤔</div>
-        <h2 style="margin:6px 0">המוצר לא נמצא במאגר</h2>
-        <p id="nfBarcode" style="opacity:.7;margin:0 0 10px;font-weight:700"></p>
-        <p style="margin:0 0 14px">בחר את חומר האריזה ידנית:</p>
+        <div style="font-size:54px">🔎</div>
+        <h2 style="margin:6px 0">בואו נזהה ביחד</h2>
+        <p id="nfBarcode" style="opacity:.7;margin:0 0 6px;font-weight:700;font-size:13px"></p>
+        <p style="margin:0 0 14px;font-weight:700">איזה סוג מוצר זה?</p>
       </div>
-      <div class="bins" style="grid-template-columns:repeat(2,1fr);gap:12px">
-        <div class="bin orange" onclick="manualPick('orange')" style="cursor:pointer;padding:18px 8px"><span class="dot">🟠</span>פלסטיק<br>+ מתכות</div>
-        <div class="bin blue"   onclick="manualPick('blue')"   style="cursor:pointer;padding:18px 8px"><span class="dot">🔵</span>נייר<br>+ קרטון</div>
-        <div class="bin green"  onclick="manualPick('green')"  style="cursor:pointer;padding:18px 8px"><span class="dot">🟢</span>זכוכית</div>
-        <div class="bin brown"  onclick="manualPick('brown')"  style="cursor:pointer;padding:18px 8px"><span class="dot">🟤</span>אורגני</div>
+
+      <div class="quick-cats">
+        <div class="qc" onclick="quickPick('orange','בקבוק פלסטיק / קרטון משקה')">
+          <span class="qc-emoji">🥤</span><span>בקבוק / קרטון<br>משקה</span>
+        </div>
+        <div class="qc" onclick="quickPick('orange','יוגורט / מוצר חלב פלסטיק')">
+          <span class="qc-emoji">🥛</span><span>חלב<br>או יוגורט</span>
+        </div>
+        <div class="qc" onclick="quickPick('orange','שימורים בפחית מתכת')">
+          <span class="qc-emoji">🥫</span><span>שימורים<br>בפחית</span>
+        </div>
+        <div class="qc" onclick="quickPick('orange','חטיף בשקית פלסטיק')">
+          <span class="qc-emoji">🍿</span><span>חטיף<br>או ממתק</span>
+        </div>
+        <div class="qc" onclick="quickPick('orange','בקבוק שמפו / חומר ניקוי')">
+          <span class="qc-emoji">🧴</span><span>שמפו /<br>ניקוי</span>
+        </div>
+        <div class="qc" onclick="quickPick('green','בקבוק זכוכית')">
+          <span class="qc-emoji">🍾</span><span>בקבוק<br>זכוכית</span>
+        </div>
+        <div class="qc" onclick="quickPick('green','צנצנת זכוכית - ריבה, חמוצים, רוטב')">
+          <span class="qc-emoji">🫙</span><span>צנצנת<br>זכוכית</span>
+        </div>
+        <div class="qc" onclick="quickPick('blue','קופסת קרטון - דגנים, עוגיות')">
+          <span class="qc-emoji">📦</span><span>קופסת<br>קרטון</span>
+        </div>
+        <div class="qc" onclick="quickPick('blue','נייר, ממחטות, מפיות')">
+          <span class="qc-emoji">📄</span><span>נייר /<br>ממחטות</span>
+        </div>
+        <div class="qc" onclick="quickPick('brown','פרי או ירק טרי')">
+          <span class="qc-emoji">🍌</span><span>פרי או<br>ירק טרי</span>
+        </div>
       </div>
+
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:#0b2e1c99">
+        או בחר ישירות לפי חומר:
+      </div>
+      <div class="bins" style="grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px">
+        <div class="bin orange" onclick="manualPick('orange')" style="cursor:pointer"><span class="dot">🟠</span>כתום</div>
+        <div class="bin blue"   onclick="manualPick('blue')"   style="cursor:pointer"><span class="dot">🔵</span>כחול</div>
+        <div class="bin green"  onclick="manualPick('green')"  style="cursor:pointer"><span class="dot">🟢</span>ירוק</div>
+        <div class="bin brown"  onclick="manualPick('brown')"  style="cursor:pointer"><span class="dot">🟤</span>חום</div>
+      </div>
+
       <button class="bigbtn" style="margin-top:14px" onclick="goto('scan')">📷 סרוק מוצר נוסף</button>
       <button class="bigbtn secondary" onclick="goto('manual')">✏️ הקלד ברקוד אחר</button>
     </section>
@@ -700,8 +753,75 @@ function lookupManual(){
 }
 
 /* ---------- Barcode lookup ---------- */
+/* ============================================================
+   LOCAL ISRAELI PRODUCT DATABASE
+   For products that don't appear in the global databases.
+   Key = barcode prefix or exact barcode; value = product info.
+   ============================================================ */
+const LOCAL_PRODUCTS = {
+  // Exact barcodes — most common Israeli supermarket products
+  // Format: { name, brand, bin, category }
+
+  /* === חלב ומוצרי חלב === (קרטון Tetra Pak / בקבוק פלסטיק → כתום) */
+  '7290000066318': {name:'חלב תנובה 3%',         brand:'תנובה',   bin:'orange', category:'חלב בקרטון'},
+  '7290000066325': {name:'חלב תנובה 1%',         brand:'תנובה',   bin:'orange', category:'חלב בקרטון'},
+  '7290000066301': {name:'חלב תנובה דל לקטוז',   brand:'תנובה',   bin:'orange', category:'חלב בקרטון'},
+  '7290004127336': {name:'חלב טרה',               brand:'תרה',    bin:'orange', category:'חלב בקרטון'},
+  '7290000208107': {name:'יוגורט דנונה',          brand:'דנונה',   bin:'orange', category:'יוגורט בכוס פלסטיק'},
+  '7290000208114': {name:'קוטג תנובה',           brand:'תנובה',   bin:'orange', category:'גבינה לבנה'},
+  '7290002330776': {name:'שוקו ביצוע יוטבתה',    brand:'יוטבתה',  bin:'orange', category:'שוקו בבקבוק פלסטיק'},
+
+  /* === דגני בוקר === (קרטון → כחול) */
+  '7290000042008': {name:'קורנפלקס תלמה',         brand:'תלמה',   bin:'blue',   category:'דגני בוקר'},
+  '7290000042015': {name:'קורן פלקס שיבולים',     brand:'תלמה',   bin:'blue',   category:'דגני בוקר'},
+  '7290000200095': {name:'במבה (קופסה גדולה)',   brand:'אסם',    bin:'blue',   category:'חטיף בקופסה'},
+
+  /* === חטיפים וקרקרים === (שקית פלסטיק → כתום) */
+  '7290000200002': {name:'במבה',                  brand:'אסם',    bin:'orange', category:'חטיף בשקית'},
+  '7290000201184': {name:'ביסלי',                 brand:'אסם',    bin:'orange', category:'חטיף בשקית'},
+  '7290000216089': {name:'אפרופו',                brand:'אסם',    bin:'orange', category:'חטיף בשקית'},
+  '7290000041018': {name:'קליק',                  brand:'עלית',   bin:'orange', category:'חטיף שוקולד בעטיפה'},
+
+  /* === משקאות === (פלסטיק → כתום) */
+  '7290000206752': {name:'מים מינרליים נביעות',  brand:'נביעות',  bin:'orange', category:'בקבוק מים'},
+  '7290000206769': {name:'מי עדן',                brand:'מי עדן',  bin:'orange', category:'בקבוק מים'},
+  '5449000000996': {name:'קוקה קולה',             brand:'Coca-Cola', bin:'orange', category:'משקה מוגז'},
+  '7290000000022': {name:'קוקה קולה ישראל',       brand:'Coca-Cola', bin:'orange', category:'משקה מוגז'},
+  '5449000017888': {name:'קוקה קולה זירו',        brand:'Coca-Cola', bin:'orange', category:'משקה מוגז'},
+
+  /* === אלכוהול === (זכוכית → ירוק) */
+  '7290000201146': {name:'בירה גולדסטאר',        brand:'גולדסטאר', bin:'green',  category:'בירה'},
+  '7290000201153': {name:'בירה מכבי',             brand:'מכבי',    bin:'green',  category:'בירה'},
+};
+
+/* Smart prefix-based heuristics — when exact code not in local DB or global DBs */
+function classifyByBarcodePrefix(code){
+  if(!code || code.length < 8) return null;
+  // 729 = Israel. Without more info we can't determine bin.
+  // 7290 + common Israeli ranges — these are guesses only, used as last resort.
+  return null;  // We don't make blind guesses based on prefix alone
+}
+
 async function lookupBarcode(code){
   goto('loading');
+
+  // ---- STEP 1: Check local Israeli product database FIRST ----
+  if(LOCAL_PRODUCTS[code]){
+    const lp = LOCAL_PRODUCTS[code];
+    const localProduct = {
+      product_name_he: lp.name,
+      brands: lp.brand,
+      categories: lp.category,
+      categories_tags: [],
+      packaging: '',
+      packaging_tags: [],
+      packaging_materials_tags: [],
+      _local_bin: lp.bin,   // pre-classified bin
+      _local: true
+    };
+    renderResult(localProduct, code, 'מאגר ישראלי מקומי');
+    return;
+  }
 
   const FIELDS = 'product_name,product_name_he,generic_name,generic_name_he,brands,quantity,' +
                  'image_front_small_url,image_small_url,image_url,' +
@@ -710,7 +830,7 @@ async function lookupBarcode(code){
   // Helper: normalize different APIs to the same shape
   const normalize = (raw, source) => raw ? ({...raw, _source: source}) : null;
 
-  // ---- Open Food Facts family (covers food, beauty, household, pet) ----
+  // ---- STEP 2: Open Food Facts family (food, beauty, household, pet) — parallel fetch ----
   const offFamily = [
     {name:'מאגר מזון',       url:`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
     {name:'מאגר ישראל',      url:`https://il.openfoodfacts.org/api/v2/product/${code}.json?fields=${FIELDS}`},
@@ -1029,8 +1149,13 @@ function renderResult(p, code, source){
   const brand = p.brands || '';
   const img = p.image_front_small_url || p.image_small_url || p.image_url || '';
 
-  // ONE smart classifier — scores all signals, picks the best bin
-  const result = classifyProduct(p, name, brand);
+  // If this came from the local DB, the bin is already known with full confidence
+  let result;
+  if(p._local_bin){
+    result = { bin: p._local_bin, confidence: 'high', via: 'מאגר ישראלי' };
+  } else {
+    result = classifyProduct(p, name, brand);
+  }
 
   const bin = result?.bin;
   const info = bin ? BIN_INFO[bin] : null;
@@ -1111,6 +1236,37 @@ function manualPick(bin){
       </ul>
     </div>
     <div class="source">בחירה ידנית · ברקוד: ${window._lastBarcode||'—'}</div>
+  `;
+  goto('result');
+}
+
+/* Quick-pick from category buttons on the "not found" screen */
+function quickPick(bin, productDesc){
+  const info = BIN_INFO[bin];
+  document.getElementById('resultContent').innerHTML = `
+    <div class="product">
+      <div class="ph">📦</div>
+      <div>
+        <h2>${escapeHtml(productDesc)}</h2>
+        <div style="margin-top:6px"><span class="pill">${window._lastBarcode||'—'}</span></div>
+      </div>
+    </div>
+    <div class="verdict ${info.cls}">
+      <div class="label">זרוק לפח</div>
+      <div class="em">${info.emoji}</div>
+      <h3>${info.name}</h3>
+      <div style="opacity:.95;margin-top:4px;font-size:16px">${info.sub}</div>
+      <div style="margin-top:10px;font-size:12px;opacity:.9;background:rgba(255,255,255,.2);padding:6px 12px;border-radius:8px;display:inline-block">✓ זוהה לפי סוג המוצר</div>
+    </div>
+    <div class="meta">
+      <b>✅ איך מכינים לפח:</b>
+      <ul style="margin:8px 0 0;padding-inline-start:20px">
+        ${info.tips.map(t=>`<li>${t}</li>`).join('')}
+      </ul>
+    </div>
+    <div style="margin-top:14px;text-align:center">
+      <button class="bigbtn" onclick="goto('scan')">📷 סרוק מוצר נוסף</button>
+    </div>
   `;
   goto('result');
 }
