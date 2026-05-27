@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800;900&family=Rubik+Mono+One&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
   :root{
     --bg:#0a5c36;
@@ -33,46 +33,130 @@
     background-attachment:fixed;
     overflow-x:hidden;
   }
-  /* floating background emojis */
-  .bg-emojis{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.12;font-size:42px;}
-  .bg-emojis span{position:absolute;animation:float 14s ease-in-out infinite;}
-  @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(8deg)}}
-  .app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:18px 16px 60px;}
-  header{
-    text-align:center;color:var(--cream);padding:18px 8px 8px;
+  /* floating background emojis - more lively */
+  .bg-emojis{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.14;font-size:42px;}
+  .bg-emojis span{position:absolute;animation:float 14s ease-in-out infinite;will-change:transform;}
+  @keyframes float{
+    0%,100%{transform:translateY(0) translateX(0) rotate(0deg)}
+    25%{transform:translateY(-25px) translateX(8px) rotate(6deg)}
+    50%{transform:translateY(-12px) translateX(-10px) rotate(-4deg)}
+    75%{transform:translateY(-30px) translateX(5px) rotate(10deg)}
+  }
+
+  /* ============ LIVE ANIMATIONS ============ */
+
+  /* Title pulse + recycle icon spin */
+  @keyframes titlePulse{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.025)}
+  }
+  @keyframes spinSlow{
+    from{transform:rotate(0deg)} to{transform:rotate(360deg)}
+  }
+  @keyframes bounceIn{
+    0%{opacity:0;transform:translateY(-30px) scale(.9)}
+    60%{opacity:1;transform:translateY(8px) scale(1.05)}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @keyframes slideUpFade{
+    0%{opacity:0;transform:translateY(20px)}
+    100%{opacity:1;transform:translateY(0)}
+  }
+  @keyframes pulseGlow{
+    0%,100%{box-shadow:0 6px 0 #00000033, 0 0 0 0 rgba(255,215,102,.6)}
+    50%{box-shadow:0 6px 0 #00000033, 0 0 0 12px rgba(255,215,102,0)}
+  }
+  @keyframes shimmer{
+    0%{background-position:-200% 0}
+    100%{background-position:200% 0}
+  }
+  @keyframes wiggle{
+    0%,100%{transform:rotate(0deg)}
+    25%{transform:rotate(-6deg)}
+    75%{transform:rotate(6deg)}
+  }
+  @keyframes pop{
+    0%{transform:scale(0) rotate(-180deg);opacity:0}
+    60%{transform:scale(1.2) rotate(10deg)}
+    100%{transform:scale(1) rotate(0);opacity:1}
+  }
+  @keyframes binBounce{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-6px)}
+  }
+  @keyframes scanLine{
+    0%{top:0%;opacity:0}
+    10%{opacity:1}
+    90%{opacity:1}
+    100%{top:100%;opacity:0}
+  }
+
+  /* Title with animated recycle icon */
+  .header-icon{
+    display:inline-block;font-size:42px;
+    animation:spinSlow 12s linear infinite;
+    transform-origin:center;
+    margin-bottom:4px;
   }
   header h1{
-    font-family:"Rubik Mono One",sans-serif;font-weight:400;
-    font-size:34px;letter-spacing:.5px;margin:6px 0 6px;line-height:1.05;
-    text-shadow:0 4px 0 rgba(0,0,0,.25);
+    animation:titlePulse 3.2s ease-in-out infinite;
+    display:inline-block;
   }
-  header p{margin:0;opacity:.92;font-weight:600;font-size:15px;}
-  .credit{margin-top:8px;font-size:13px;opacity:.85}
-  .credit b{background:#ffd766;color:#0b2e1c;padding:2px 8px;border-radius:999px;font-weight:800}
+  header p{ animation:slideUpFade .8s ease-out both; animation-delay:.2s; }
+  .credit{ animation:slideUpFade .8s ease-out both; animation-delay:.4s; }
+  .credit b{ display:inline-block; animation:wiggle 4s ease-in-out infinite; animation-delay:1.2s; }
 
+  /* Cards slide up on appear */
   .card{
     background:var(--cream);border-radius:24px;padding:18px;
     box-shadow:var(--shadow);margin-top:18px;
     border:3px solid #0b2e1c14;
+    animation:slideUpFade .55s ease-out both;
   }
+
+  /* Big buttons: continuous gentle pulse glow */
   .bigbtn{
     width:100%;border:none;cursor:pointer;
     background:#0b2e1c;color:#fdf6e3;
     font-family:inherit;font-weight:800;font-size:20px;
     padding:18px 14px;border-radius:18px;
     box-shadow:0 6px 0 #00000033;
-    transition:transform .08s ease;
+    transition:transform .08s ease, box-shadow .2s ease;
+    position:relative;overflow:hidden;
   }
-  .bigbtn:active{transform:translateY(3px);box-shadow:0 3px 0 #00000033}
+  /* Shimmer sweep across the primary button */
+  .bigbtn:not(.secondary)::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(110deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+    background-size:200% 100%;
+    animation:shimmer 3.5s ease-in-out infinite;
+    pointer-events:none;
+  }
+  #home .bigbtn:not(.secondary){
+    animation:pulseGlow 2.4s ease-in-out infinite;
+  }
+  .bigbtn:active{transform:translateY(3px) scale(.98);box-shadow:0 3px 0 #00000033}
+  .bigbtn:hover{transform:translateY(-1px)}
   .bigbtn.secondary{background:#fff;color:#0b2e1c;border:3px solid #0b2e1c;box-shadow:0 6px 0 #0b2e1c33;margin-top:10px;}
 
+  /* The 4 bins on the home screen — each bounces with a small delay so they look alive */
   .bins{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
   .bin{
     background:#fff;border-radius:16px;padding:12px 6px;text-align:center;
     border:3px solid transparent;font-weight:700;font-size:12px;line-height:1.15;
-    transition:transform .15s ease;
+    transition:transform .15s ease, box-shadow .25s ease;
+    animation:bounceIn .7s ease-out both;
   }
-  .bin .dot{font-size:28px;display:block;margin-bottom:4px}
+  .bin:nth-child(1){animation-delay:.05s}
+  .bin:nth-child(2){animation-delay:.15s}
+  .bin:nth-child(3){animation-delay:.25s}
+  .bin:nth-child(4){animation-delay:.35s}
+  .bin .dot{font-size:28px;display:block;margin-bottom:4px;animation:binBounce 2.6s ease-in-out infinite}
+  .bin:nth-child(1) .dot{animation-delay:0s}
+  .bin:nth-child(2) .dot{animation-delay:.3s}
+  .bin:nth-child(3) .dot{animation-delay:.6s}
+  .bin:nth-child(4) .dot{animation-delay:.9s}
+  .bin:hover{transform:translateY(-4px) scale(1.04);box-shadow:0 8px 16px rgba(0,0,0,.15)}
   .bin.orange{border-color:var(--orange);color:#a04300}
   .bin.blue{border-color:var(--blue);color:#0b4f99}
   .bin.green{border-color:var(--green);color:#1a6a1f}
@@ -86,11 +170,41 @@
   #reader__scan_region{background:transparent!important}
   #reader__scan_region img{display:none!important}
   #reader__dashboard{display:none!important}
-  .frame{position:absolute;inset:14%;border:3px dashed #fdf6e3;border-radius:14px;pointer-events:none}
+  /* Frame pulses gently to draw attention */
+  @keyframes framePulse{
+    0%,100%{border-color:rgba(253,246,227,.85);box-shadow:0 0 0 0 rgba(46,204,64,.45)}
+    50%{border-color:rgba(46,204,64,1);box-shadow:0 0 0 8px rgba(46,204,64,0)}
+  }
+  .frame{
+    position:absolute;inset:14%;border:3px dashed #fdf6e3;border-radius:14px;pointer-events:none;
+    animation:framePulse 2s ease-in-out infinite;
+  }
+  /* Red scan line that travels up & down inside the frame */
+  .frame::before{
+    content:'';position:absolute;left:5%;right:5%;height:3px;
+    background:linear-gradient(90deg, transparent, #ff3b30, transparent);
+    box-shadow:0 0 16px 2px rgba(255,59,48,.8);
+    animation:scanLine 2.2s ease-in-out infinite;
+    border-radius:2px;
+  }
+  /* Corner brackets for that "scanner" feel */
+  .frame::after{
+    content:'';position:absolute;inset:-3px;pointer-events:none;
+    background:
+      linear-gradient(#2ecc40,#2ecc40) left top/22px 3px no-repeat,
+      linear-gradient(#2ecc40,#2ecc40) left top/3px 22px no-repeat,
+      linear-gradient(#2ecc40,#2ecc40) right top/22px 3px no-repeat,
+      linear-gradient(#2ecc40,#2ecc40) right top/3px 22px no-repeat,
+      linear-gradient(#2ecc40,#2ecc40) left bottom/22px 3px no-repeat,
+      linear-gradient(#2ecc40,#2ecc40) left bottom/3px 22px no-repeat,
+      linear-gradient(#2ecc40,#2ecc40) right bottom/22px 3px no-repeat,
+      linear-gradient(#2ecc40,#2ecc40) right bottom/3px 22px no-repeat;
+  }
   .tap-start{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     color:#fdf6e3;font-weight:800;font-size:18px;text-align:center;
     background:rgba(0,0,0,.5);cursor:pointer;z-index:2;padding:20px;
+    animation:titlePulse 1.4s ease-in-out infinite;
   }
   .hint{text-align:center;color:#0b2e1c;font-weight:700;margin-top:10px;font-size:14px}
 
@@ -99,26 +213,51 @@
     flex:1;padding:14px 16px;border-radius:14px;
     border:3px solid #0b2e1c22;font-family:inherit;font-size:18px;
     background:#fff;outline:none;font-weight:600;text-align:center;letter-spacing:2px;
+    transition:border-color .2s, box-shadow .2s;
   }
-  input[type="text"]:focus{border-color:#0b2e1c}
+  input[type="text"]:focus{border-color:#0b2e1c;box-shadow:0 0 0 4px rgba(11,46,28,.12)}
 
   .back{
     background:transparent;border:none;color:var(--cream);
     font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;
     padding:8px 4px;display:inline-flex;align-items:center;gap:6px;
+    transition:transform .15s;
   }
+  .back:hover{transform:translateX(4px)}
 
   /* result */
-  .product{display:flex;gap:14px;align-items:center;margin-bottom:14px}
-  .product img{width:84px;height:84px;border-radius:14px;object-fit:cover;background:#eee;border:3px solid #0b2e1c14}
-  .product .ph{width:84px;height:84px;border-radius:14px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:36px}
+  .product{display:flex;gap:14px;align-items:center;margin-bottom:14px;animation:slideUpFade .5s ease-out both}
+  .product img{width:84px;height:84px;border-radius:14px;object-fit:cover;background:#eee;border:3px solid #0b2e1c14;animation:pop .6s ease-out both;animation-delay:.1s}
+  .product .ph{width:84px;height:84px;border-radius:14px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:36px;animation:pop .6s ease-out both;animation-delay:.1s}
   .product h2{margin:0;font-size:18px;line-height:1.2}
   .product .brand{font-size:13px;opacity:.7;margin-top:4px;font-weight:600}
 
+  /* Verdict box: pops in dramatically, the bin emoji bounces forever */
+  @keyframes verdictIn{
+    0%{opacity:0;transform:scale(.6) rotate(-3deg)}
+    60%{opacity:1;transform:scale(1.05) rotate(1deg)}
+    100%{opacity:1;transform:scale(1) rotate(0deg)}
+  }
+  @keyframes emojiBounce{
+    0%,100%{transform:translateY(0) scale(1)}
+    30%{transform:translateY(-14px) scale(1.08)}
+    60%{transform:translateY(0) scale(1)}
+    70%{transform:translateY(-6px) scale(1.04)}
+  }
   .verdict{
     border-radius:20px;padding:24px 18px;text-align:center;color:#fff;
     box-shadow:inset 0 -6px 0 rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.18);
     margin-top:6px;
+    animation:verdictIn .7s cubic-bezier(.34,1.56,.64,1) both;
+    position:relative;overflow:hidden;
+  }
+  /* Subtle moving sparkle inside the verdict box */
+  .verdict::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(110deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%);
+    background-size:200% 100%;
+    animation:shimmer 4s ease-in-out infinite;
+    pointer-events:none;
   }
   .verdict.orange{background:linear-gradient(180deg,#ff9842,#ff7a1a)}
   .verdict.blue{background:linear-gradient(180deg,#3aa3ff,#1e7ad6)}
@@ -126,30 +265,62 @@
   .verdict.brown{background:linear-gradient(180deg,#a06d36,#7a4d22)}
   .verdict .label{font-size:13px;text-transform:uppercase;letter-spacing:2px;opacity:.92;font-weight:800}
   .verdict h3{margin:6px 0 0;font-size:34px;font-weight:900;text-shadow:0 3px 0 rgba(0,0,0,.18)}
-  .verdict .em{font-size:72px;margin:8px 0;line-height:1;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18))}
+  .verdict .em{
+    font-size:72px;margin:8px 0;line-height:1;
+    filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));
+    display:inline-block;
+    animation:emojiBounce 2.2s ease-in-out infinite;
+    animation-delay:.8s;
+  }
 
-  .meta{margin-top:14px;font-size:14px;background:#fff;border-radius:14px;padding:12px;border:3px solid #0b2e1c14}
+  .meta{
+    margin-top:14px;font-size:14px;background:#fff;border-radius:14px;padding:12px;border:3px solid #0b2e1c14;
+    animation:slideUpFade .5s ease-out both;animation-delay:.4s;
+  }
   .meta b{color:#0b2e1c}
 
   .loader{
     text-align:center;padding:30px 10px;
   }
+  /* Loader: spinner + pulsing dots together for liveliness */
   .loader .spin{
-    width:54px;height:54px;border:5px solid #0b2e1c22;border-top-color:#0b2e1c;
-    border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;
+    width:64px;height:64px;border:5px solid #0b2e1c22;border-top-color:#0b2e1c;
+    border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 14px;
+    position:relative;
+  }
+  .loader .spin::after{
+    content:'♻️';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:28px;animation:spinSlow 4s linear infinite reverse;
   }
   @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes dotsBlink{
+    0%,20%{opacity:0}
+    50%{opacity:1}
+    100%{opacity:0}
+  }
+  .loader .dots{display:inline-block;letter-spacing:2px}
+  .loader .dots::after{content:'...';display:inline-block}
 
   .hidden{display:none!important}
 
   .alert{
     background:#fff3cd;border:3px solid #ffd766;color:#5a4500;
     border-radius:14px;padding:12px;font-weight:700;font-size:14px;margin-bottom:12px;
+    animation:slideUpFade .4s ease-out both;
   }
 
   .pill{display:inline-block;background:#0b2e1c;color:#fdf6e3;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;margin:2px 2px 0 0}
 
   .source{font-size:11px;color:#0b2e1c88;text-align:center;margin-top:14px}
+
+  /* Reduced motion - respect user's accessibility preference */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation-duration:.01ms!important;
+      animation-iteration-count:1!important;
+      transition-duration:.01ms!important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -157,7 +328,7 @@
   <div class="app">
 
     <header>
-      <div style="font-size:42px">♻️</div>
+      <div class="header-icon">♻️</div>
       <h1>ממחזרים נכון</h1>
       <p>סרוק ברקוד — גלה לאיזה פח לזרוק</p>
       <div class="credit">✨ <b>ניתאי דואק</b> ✨</div>
@@ -184,8 +355,17 @@
         <div id="tapStart" class="tap-start hidden">👆 הקש להפעלת המצלמה</div>
       </div>
       <div id="scanError" class="alert hidden" style="margin-top:10px"></div>
-      <div class="hint">📦 קרב את האריזה · ☀️ ודא תאורה טובה</div>
-      <button class="bigbtn secondary" onclick="goto('manual')">✏️ אני מעדיף להקליד ידנית</button>
+      <div class="hint">📏 החזק את הברקוד במרחק 15-20 ס"מ · ☀️ תאורה טובה · יציב 2 שניות</div>
+
+      <div style="margin-top:12px;padding-top:12px;border-top:2px dashed #0b2e1c22">
+        <div style="text-align:center;font-weight:800;color:#0b2e1c;margin-bottom:8px">לא עובד? נסה לצלם תמונה:</div>
+        <label class="bigbtn" style="display:block;text-align:center;cursor:pointer;margin:0">
+          📸 צלם תמונה של הברקוד
+          <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="decodePhoto(this)">
+        </label>
+      </div>
+
+      <button class="bigbtn secondary" onclick="goto('manual')">✏️ הקלד את מספר הברקוד ידנית</button>
     </section>
 
     <!-- MANUAL -->
@@ -202,8 +382,8 @@
     <section id="loading" class="card hidden">
       <div class="loader">
         <div class="spin"></div>
-        <div style="font-weight:800;font-size:18px">בודק מוצר...</div>
-        <div style="opacity:.7;margin-top:4px">מחפש במאגרים העולמיים</div>
+        <div style="font-weight:800;font-size:18px">בודק מוצר<span class="dots"></span></div>
+        <div style="opacity:.7;margin-top:4px">מחפש במאגרים העולמיים<span class="dots"></span></div>
       </div>
     </section>
 
@@ -268,11 +448,13 @@ function goto(name){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* ---------- Scanner (html5-qrcode) ---------- */
-let html5QrCode = null;
+/* ---------- Scanner (ZXing — works on iOS Safari + Android) ---------- */
+let zxingReader = null;
+let zxingControls = null;
+let videoStream = null;
 let scannerActive = false;
 let lastResultCode = null;   // ignore this code on re-scan until a different one is seen
-let scanStartTime = 0;       // ignore scans for first 800ms after starting (avoids instant retrigger)
+let scanStartTime = 0;
 
 function showScanError(msg){
   const el = document.getElementById('scanError');
@@ -286,99 +468,228 @@ function hideScanError(){
 async function startScanner(){
   hideScanError();
 
-  if(typeof Html5Qrcode === 'undefined'){
-    showScanError('⚠️ ספריית הסריקה לא נטענה. בדוק חיבור לאינטרנט ורענן.');
+  if(typeof ZXing === 'undefined'){
+    showScanError('⚠️ ספריית הסריקה לא נטענה. בדוק חיבור לאינטרנט ורענן את הדף.');
     return;
   }
 
-  // ALWAYS fully tear down any previous instance first (fixes stuck-after-not-found)
+  // Always tear down any previous instance first
   await stopScanner();
 
-  // Clear the reader DOM completely
+  // Build the reader DOM with a real <video> element (required for iOS)
   const readerEl = document.getElementById('reader');
   readerEl.innerHTML = '<div class="frame"></div>';
+  const video = document.createElement('video');
+  video.setAttribute('playsinline', 'true');   // CRITICAL for iOS — without this iOS opens fullscreen and fails
+  video.setAttribute('autoplay', 'true');
+  video.setAttribute('muted', 'true');
+  video.muted = true;
+  video.style.width = '100%';
+  video.style.height = '100%';
+  video.style.objectFit = 'cover';
+  readerEl.prepend(video);
 
   try{
-    html5QrCode = new Html5Qrcode("reader", { verbose:false });
+    // Set up ZXing with the barcode formats we care about
+    const hints = new Map();
+    const formats = [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.ITF,
+      ZXing.BarcodeFormat.QR_CODE,
+    ];
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-    const config = {
-      fps: 10,
-      qrbox: function(viewfinderWidth, viewfinderHeight){
-        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        const size = Math.floor(minEdge * 0.7);
-        return { width: size, height: size };
-      },
-      aspectRatio: 1.0,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.QR_CODE,
-      ]
-    };
+    // @zxing/library UMD: 2nd arg = ms between scan attempts
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 100);
 
-    await html5QrCode.start(
-      { facingMode: "environment" },
-      config,
-      (decodedText) => {
-        const code = decodedText.replace(/\D/g,'');
-        if(!code || code.length<8) return;
-        if(!scannerActive) return;
-        // Skip the immediately-previous code so "scan again" doesn't re-fire on same product
-        if(code === lastResultCode) return;
-        // Brief grace period after starting
-        if(Date.now() - scanStartTime < 800) return;
-        scannerActive = false;
-        lastResultCode = code;
-        stopScanner().then(()=>lookupBarcode(code));
-      },
-      () => { /* ignore per-frame errors */ }
+    // On iOS the deviceId/labels are empty until camera permission is granted,
+    // so request a stream first to unlock device labels.
+    try{
+      const probe = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } }, audio: false
+      });
+      probe.getTracks().forEach(t => t.stop());
+    }catch(permErr){ throw permErr; }
+
+    // Enumerate cameras and pick the back one
+    let deviceId = undefined;
+    try{
+      let devices = [];
+      if(zxingReader.listVideoInputDevices){
+        devices = await zxingReader.listVideoInputDevices();
+      }else if(navigator.mediaDevices.enumerateDevices){
+        const all = await navigator.mediaDevices.enumerateDevices();
+        devices = all.filter(d => d.kind === 'videoinput');
+      }
+      if(devices && devices.length){
+        const back = devices.find(d => /back|rear|environment|wide|אחורית/i.test(d.label || ''));
+        // last device is usually the main back camera on phones
+        deviceId = (back || devices[devices.length - 1]).deviceId || undefined;
+      }
+    }catch(e){ /* fall back to default camera */ }
+
+    zxingControls = await zxingReader.decodeFromVideoDevice(
+      deviceId || undefined,
+      video,
+      (result, err) => {
+        if(result && scannerActive){
+          const code = (result.getText ? result.getText() : (result.text || '')).replace(/\D/g, '');
+          if(!code || code.length < 8) return;
+          if(code === lastResultCode) return;
+          if(Date.now() - scanStartTime < 700) return;
+          scannerActive = false;
+          lastResultCode = code;
+          if(navigator.vibrate){ try{ navigator.vibrate(120); }catch(e){} }
+          stopScanner().then(() => lookupBarcode(code));
+        }
+        // per-frame NotFoundException is normal — ignore it
+      }
     );
+
+    // iOS sometimes needs an explicit play()
+    try{ await video.play(); }catch(e){
+      const tap = document.getElementById('tapStart');
+      tap.classList.remove('hidden');
+      tap.onclick = async () => { try{ await video.play(); tap.classList.add('hidden'); }catch(_){} };
+    }
+
+    // Continuous autofocus when supported
+    try{
+      const s = video.srcObject;
+      if(s){
+        const track = s.getVideoTracks()[0];
+        const caps = track && track.getCapabilities ? track.getCapabilities() : {};
+        if(caps.focusMode && caps.focusMode.includes('continuous')){
+          await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        }
+      }
+    }catch(e){ /* ignore */ }
+
     scannerActive = true;
     scanStartTime = Date.now();
 
   }catch(e){
     console.error('Camera error:', e);
-    const errStr = (e && (e.message||e.toString())) || '';
+    const name = (e && e.name) || '';
+    const errStr = (e && (e.message || e.toString())) || '';
     let msg = '';
-    if(/NotAllowed|Permission|denied/i.test(errStr)){
+    if(name === 'NotAllowedError' || /NotAllowed|Permission|denied/i.test(errStr)){
       msg = '🚫 <b>הדפדפן חוסם גישה למצלמה</b><br><br>' +
-            '<b>אנדרואיד (Chrome):</b><br>' +
-            '1. לחץ על אייקון המנעול 🔒 שמאלית לכתובת<br>' +
-            '2. הקש "הרשאות" / "Permissions"<br>' +
-            '3. הקש על "מצלמה" וסמן "אפשר"<br>' +
-            '4. רענן את הדף<br><br>' +
-            '<b>אייפון (Safari):</b><br>' +
-            '1. הגדרות → Safari → מצלמה<br>' +
-            '2. בחר "שאל" או "אפשר"<br>' +
+            '<b>באייפון (Safari):</b><br>' +
+            '1. פתח את אפליקציית <b>הגדרות</b><br>' +
+            '2. גלול ל-<b>Safari</b><br>' +
+            '3. הקש <b>מצלמה</b> → בחר <b>אפשר</b><br>' +
+            '4. חזור לדפדפן ורענן את הדף<br>' +
+            '— או — הקש על <b>אא</b> בשורת הכתובת ← הגדרות אתר ← מצלמה ← אפשר<br><br>' +
+            '<b>באנדרואיד (Chrome):</b><br>' +
+            '1. הקש על המנעול 🔒 ליד הכתובת<br>' +
+            '2. הרשאות ← מצלמה ← אפשר<br>' +
             '3. רענן את הדף';
-    } else if(/NotFound|DevicesNotFound/i.test(errStr)){
+    } else if(name === 'NotFoundError' || /NotFound|DevicesNotFound/i.test(errStr)){
       msg = '📷 לא נמצאה מצלמה במכשיר.';
-    } else if(/NotReadable|TrackStart|in use/i.test(errStr)){
-      msg = '📷 המצלמה תפוסה על ידי אפליקציה אחרת. סגור אפליקציות מצלמה ונסה שוב.';
-    } else if(/secure|https/i.test(errStr)){
-      msg = '🔒 גישה למצלמה דורשת חיבור מאובטח (HTTPS). ודא שהכתובת מתחילה ב-https://';
+    } else if(name === 'NotReadableError' || /NotReadable|TrackStart|in use/i.test(errStr)){
+      msg = '📷 המצלמה תפוסה. סגור אפליקציות מצלמה אחרות ונסה שוב.';
+    } else if(name === 'SecurityError' || /secure|https/i.test(errStr)){
+      msg = '🔒 גישה למצלמה דורשת חיבור מאובטח (https). ודא שפתחת את הקישור עם https://';
     } else {
-      msg = '⚠️ ' + errStr + '<br><br>נסה דפדפן עדכני (Chrome/Safari) או הקלד ברקוד ידנית.';
+      msg = '⚠️ ' + errStr + '<br><br>נסה לרענן, או השתמש בכפתור "הקלד מספר ברקוד ידנית" למטה.';
     }
     showScanError(msg);
   }
 }
 
 async function stopScanner(){
-  if(html5QrCode){
-    try{
-      if(scannerActive){ await html5QrCode.stop(); }
-    }catch(e){ /* ignore */ }
-    try{
-      await html5QrCode.clear();
-    }catch(e){ /* ignore */ }
-    html5QrCode = null;   // FULL reset - next start creates a fresh instance
-  }
   scannerActive = false;
+  document.getElementById('tapStart')?.classList.add('hidden');
+  // Stop ZXing
+  try{ if(zxingControls && zxingControls.stop) zxingControls.stop(); }catch(e){}
+  try{ if(zxingReader && zxingReader.reset) zxingReader.reset(); }catch(e){}
+  zxingControls = null;
+  zxingReader = null;
+  // Stop the camera stream (release the camera light/hardware)
+  if(videoStream){
+    try{ videoStream.getTracks().forEach(t => t.stop()); }catch(e){}
+    videoStream = null;
+  }
+  document.querySelectorAll('#reader video').forEach(v => {
+    try{ if(v.srcObject){ v.srcObject.getTracks().forEach(t=>t.stop()); v.srcObject = null; } }catch(e){}
+  });
+}
+
+/* ---------- Decode a still PHOTO (most reliable fallback for iOS) ---------- */
+async function decodePhoto(input){
+  const file = input.files && input.files[0];
+  input.value = '';            // reset so the same file can be picked again
+  if(!file) return;
+  if(typeof ZXing === 'undefined'){
+    showScanError('⚠️ ספריית הסריקה לא נטענה. רענן את הדף.');
+    return;
+  }
+  hideScanError();
+  await stopScanner();
+  goto('loading');
+
+  try{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,  ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.QR_CODE,
+    ]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+
+    const reader = new ZXing.BrowserMultiFormatReader(hints);
+
+    let result = null;
+    // Try the full image first
+    try{ result = await reader.decodeFromImageElement(img); }catch(e){}
+
+    // If that fails, try downscaled/upscaled canvas renders (helps large phone photos)
+    if(!result){
+      const scales = [0.6, 0.4, 1.5, 0.8];
+      for(const sc of scales){
+        try{
+          const canvas = document.createElement('canvas');
+          canvas.width  = Math.max(1, Math.round(img.naturalWidth  * sc));
+          canvas.height = Math.max(1, Math.round(img.naturalHeight * sc));
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          if(reader.decodeFromCanvas){
+            result = reader.decodeFromCanvas(canvas);
+          }
+          if(result) break;
+        }catch(e){ /* try next scale */ }
+      }
+    }
+    URL.revokeObjectURL(url);
+
+    if(result){
+      const code = (result.getText ? result.getText() : (result.text||'')).replace(/\D/g,'');
+      if(code && code.length >= 8){
+        if(navigator.vibrate){ try{ navigator.vibrate(120); }catch(e){} }
+        lookupBarcode(code);
+        return;
+      }
+    }
+    // No barcode found in the photo
+    document.getElementById('nfBarcode').textContent = 'לא זוהה ברקוד בתמונה';
+    window._lastBarcode = '';
+    goto('notfound');
+  }catch(e){
+    console.error('photo decode error', e);
+    showScanError('⚠️ לא הצלחתי לקרוא את התמונה. נסה לצלם שוב מקרוב יותר ובתאורה טובה, או הקלד את המספר ידנית.');
+    goto('scan');
+  }
 }
 
 /* ---------- Manual input ---------- */
