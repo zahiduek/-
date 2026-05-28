@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a5c36" />
+<title>משחק המחזור ♻️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800;900&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a5c36;
+    --bg-2:#0d7a47;
+    --cream:#fdf6e3;
+    --ink:#0b2e1c;
+    --orange:#ff7a1a;
+    --blue:#1e90ff;
+    --green:#2ecc40;
+    --brown:#8b5a2b;
+    --shadow:0 8px 0 rgba(0,0,0,.18), 0 14px 30px rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    font-family:"Heebo",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #1aa55f55, transparent),
+      radial-gradient(900px 500px at -10% 110%, #ffd76633, transparent),
+      linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment:fixed;
+    touch-action:none;
+  }
+  .app{position:relative;width:100%;height:100vh;height:100dvh;max-width:600px;margin:0 auto;overflow:hidden;}
+
+  /* ============ START SCREEN ============ */
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;z-index:5}
+  .screen.hidden{display:none}
+  .start h1{
+    font-family:"Rubik Mono One",sans-serif;font-weight:400;
+    font-size:42px;color:var(--cream);margin:0;line-height:1.1;
+    text-shadow:0 4px 0 rgba(0,0,0,.3);
+    animation:titlePulse 3s ease-in-out infinite;
+  }
+  .start .sub{color:var(--cream);opacity:.92;font-weight:600;margin:10px 0 20px;font-size:16px}
+  .start .icon{font-size:80px;animation:spinSlow 8s linear infinite;margin-bottom:8px}
+  .start-card{background:var(--cream);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-width:340px;width:100%}
+  .start-card h2{margin:0 0 10px;font-size:20px}
+  .start-card p{margin:6px 0;font-size:14px;line-height:1.5}
+  .start-card .bin-row{display:flex;justify-content:center;gap:8px;margin:14px 0 4px;flex-wrap:wrap}
+  .start-card .bin-mini{display:inline-flex;flex-direction:column;align-items:center;font-size:11px;font-weight:700;gap:2px}
+  .start-card .bin-mini .ball{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:900}
+  .ball.orange{background:var(--orange)} .ball.blue{background:var(--blue)} .ball.green{background:var(--green)} .ball.brown{background:var(--brown)}
+  .bigbtn{
+    width:100%;border:none;cursor:pointer;
+    background:#0b2e1c;color:#fdf6e3;
+    font-family:inherit;font-weight:800;font-size:20px;
+    padding:18px 14px;border-radius:18px;
+    box-shadow:0 6px 0 #00000033;
+    transition:transform .08s ease;margin-top:14px;
+    position:relative;overflow:hidden;
+  }
+  .bigbtn::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(110deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+    background-size:200% 100%;
+    animation:shimmer 3.5s ease-in-out infinite;
+    pointer-events:none;
+  }
+  .bigbtn:active{transform:translateY(3px);box-shadow:0 3px 0 #00000033}
+  .credit{color:var(--cream);font-size:13px;opacity:.85;margin-top:14px}
+  .credit b{background:#ffd766;color:#0b2e1c;padding:2px 8px;border-radius:999px;font-weight:800}
+
+  /* ============ GAME SCREEN ============ */
+  .game{position:absolute;inset:0;display:flex;flex-direction:column;z-index:1}
+  .game.hidden{display:none}
+  .hud{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px;color:var(--cream);font-weight:800;
+    background:rgba(0,0,0,.18);
+  }
+  .hud .stat{display:flex;align-items:center;gap:6px;font-size:16px}
+  .hud .stat .num{
+    background:#ffd766;color:#0b2e1c;border-radius:12px;
+    padding:3px 10px;min-width:32px;text-align:center;font-size:16px;
+  }
+  .hearts{font-size:20px;letter-spacing:2px;display:inline-block}
+  .heart-lost{opacity:.25;filter:grayscale(1)}
+  .heart-pop{animation:heartPop .35s ease-out}
+  @keyframes heartPop{0%{transform:scale(1)}50%{transform:scale(1.6)}100%{transform:scale(1)}}
+
+  /* Falling-items zone */
+  .zone{position:relative;flex:1;overflow:hidden}
+  .item{
+    position:absolute;width:96px;height:96px;display:flex;align-items:center;justify-content:center;
+    font-size:68px;cursor:grab;touch-action:none;
+    filter:drop-shadow(0 4px 0 rgba(0,0,0,.25));
+    transition:transform .12s ease;will-change:transform;
+    z-index:2;
+  }
+  .item:active{cursor:grabbing;transform:scale(1.15)}
+  .item.dragging{transform:scale(1.25);z-index:10}
+  .item.correct{animation:itemCorrect .5s ease-out forwards}
+  .item.wrong{animation:itemWrong .5s ease-out forwards}
+  @keyframes itemCorrect{
+    0%{transform:scale(1.2)}
+    50%{transform:scale(1.5);filter:drop-shadow(0 0 12px #ffd766)}
+    100%{transform:scale(0);opacity:0}
+  }
+  @keyframes itemWrong{
+    0%{transform:scale(1.2)}
+    20%{transform:scale(1.2) translateX(-10px)}
+    40%{transform:scale(1.2) translateX(10px)}
+    60%{transform:scale(1.2) translateX(-8px)}
+    80%{transform:scale(1.2) translateX(8px)}
+    100%{transform:scale(0) rotate(180deg);opacity:0}
+  }
+
+  /* Bins row at bottom */
+  .bins{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+    padding:10px 8px 14px;background:rgba(0,0,0,.25);
+  }
+  .bin{
+    position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    height:110px;border-radius:14px;padding:8px 4px;
+    font-weight:800;color:#fff;font-size:12px;line-height:1.1;text-align:center;
+    box-shadow:inset 0 -8px 0 rgba(0,0,0,.25);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .bin .label{margin-top:auto}
+  .bin .top-rim{
+    position:absolute;top:0;left:8%;right:8%;height:8px;
+    background:rgba(255,255,255,.4);border-radius:8px 8px 0 0;
+  }
+  .bin .mouth{
+    position:absolute;top:10px;left:18%;right:18%;height:8px;
+    background:rgba(0,0,0,.35);border-radius:4px;
+  }
+  .bin .recycle-icon{font-size:22px;margin-top:14px}
+  .bin.orange{background:linear-gradient(180deg,#ff9842,#ff7a1a)}
+  .bin.blue  {background:linear-gradient(180deg,#3aa3ff,#1e7ad6)}
+  .bin.green {background:linear-gradient(180deg,#3edd55,#22a834)}
+  .bin.brown {background:linear-gradient(180deg,#a06d36,#7a4d22)}
+  .bin.active{transform:translateY(-6px) scale(1.05);box-shadow:inset 0 -8px 0 rgba(0,0,0,.25), 0 0 0 4px #ffd766}
+
+  /* Floating combo / points text */
+  .pop-text{
+    position:absolute;font-weight:900;font-size:24px;pointer-events:none;
+    animation:popUp 1s ease-out forwards;z-index:20;text-shadow:0 2px 4px rgba(0,0,0,.5);
+  }
+  .pop-text.good{color:#ffd766}
+  .pop-text.bad{color:#ff4444}
+  @keyframes popUp{
+    0%{opacity:0;transform:translate(-50%,0) scale(.5)}
+    20%{opacity:1;transform:translate(-50%,-20px) scale(1.2)}
+    100%{opacity:0;transform:translate(-50%,-80px) scale(1)}
+  }
+
+  /* Background floating recycle bits */
+  .bg-emojis{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.12;font-size:36px;}
+  .bg-emojis span{position:absolute;animation:float 14s ease-in-out infinite;will-change:transform;}
+  @keyframes float{
+    0%,100%{transform:translateY(0) rotate(0)}
+    50%{transform:translateY(-30px) rotate(15deg)}
+  }
+  @keyframes titlePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+  @keyframes spinSlow{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+  /* ============ GAME-OVER SCREEN ============ */
+  .over{background:rgba(0,0,0,.6);backdrop-filter:blur(6px);}
+  .over-card{
+    background:var(--cream);border-radius:24px;padding:24px;box-shadow:var(--shadow);
+    max-width:340px;width:100%;text-align:center;
+    animation:popIn .5s cubic-bezier(.34,1.56,.64,1)
+  }
+  @keyframes popIn{
+    0%{opacity:0;transform:scale(.5)}
+    100%{opacity:1;transform:scale(1)}
+  }
+  .over-card .big-emoji{font-size:72px;margin-bottom:6px}
+  .over-card h2{margin:6px 0;font-size:28px}
+  .over-card .final-score{font-size:48px;font-weight:900;color:var(--orange);margin:10px 0}
+  .over-card .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;font-size:14px}
+  .over-card .stats .st{background:#fff;border-radius:10px;padding:8px;font-weight:700}
+  .over-card .stats .st b{display:block;font-size:18px;color:var(--bg)}
+  .over-card .best{font-size:14px;font-weight:700;background:#ffd766;color:#0b2e1c;padding:6px 12px;border-radius:999px;display:inline-block;margin:4px 0}
+
+  /* ============ READY-GO countdown ============ */
+  .countdown{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    z-index:50;background:rgba(0,0,0,.35);pointer-events:none;
+  }
+  .countdown.hidden{display:none}
+  .countdown .big{
+    font-family:"Rubik Mono One",sans-serif;font-size:140px;color:#ffd766;
+    text-shadow:0 6px 0 rgba(0,0,0,.4);
+    animation:countPop .8s ease-out forwards;
+  }
+  @keyframes countPop{
+    0%{transform:scale(.2);opacity:0}
+    30%{transform:scale(1.2);opacity:1}
+    70%{transform:scale(1);opacity:1}
+    100%{transform:scale(1.4);opacity:0}
+  }
+
+  @media (max-width:380px){
+    .item{width:80px;height:80px;font-size:56px}
+    .bin{height:96px;font-size:11px}
+    .bin .recycle-icon{font-size:18px;margin-top:10px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bg-emojis" id="bgEmojis"></div>
+
+  <!-- ============ START SCREEN ============ -->
+  <section class="screen start" id="startScreen">
+    <div class="icon">♻️</div>
+    <h1>משחק המחזור</h1>
+    <div class="sub">גרור כל מוצר לפח הנכון</div>
+
+    <div class="start-card">
+      <h2>איך משחקים?</h2>
+      <p>מוצרים נופלים מלמעלה. גרור כל אחד לפח המתאים <b>לפני שהוא מגיע לרצפה</b>.</p>
+      <div class="bin-row">
+        <div class="bin-mini"><div class="ball orange">♻</div>פלסטיק<br>+ מתכות</div>
+        <div class="bin-mini"><div class="ball blue">♻</div>נייר<br>+ קרטון</div>
+        <div class="bin-mini"><div class="ball green">♻</div>זכוכית</div>
+        <div class="bin-mini"><div class="ball brown">♻</div>אורגני</div>
+      </div>
+      <p style="margin-top:14px"><b>❤️ 3 חיים</b> · <b>🎯 20 מוצרים</b> · <b>⭐ נקודות</b></p>
+      <button class="bigbtn" onclick="startGame()">🎮 התחל לשחק</button>
+    </div>
+    <div class="credit">✨ <b>ניתאי דואק</b> ✨</div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section class="game hidden" id="gameScreen">
+    <div class="hud">
+      <div class="stat">⭐ <span class="num" id="scoreNum">0</span></div>
+      <div class="stat">🎯 <span class="num" id="progressNum">0/20</span></div>
+      <div class="stat hearts" id="hearts">❤️❤️❤️</div>
+    </div>
+
+    <div class="zone" id="zone"></div>
+
+    <div class="bins" id="binsRow">
+      <div class="bin orange" data-bin="orange">
+        <div class="top-rim"></div><div class="mouth"></div>
+        <div class="recycle-icon">♻️</div>
+        <div class="label">פלסטיק<br>+ מתכות</div>
+      </div>
+      <div class="bin blue" data-bin="blue">
+        <div class="top-rim"></div><div class="mouth"></div>
+        <div class="recycle-icon">♻️</div>
+        <div class="label">נייר<br>+ קרטון</div>
+      </div>
+      <div class="bin green" data-bin="green">
+        <div class="top-rim"></div><div class="mouth"></div>
+        <div class="recycle-icon">♻️</div>
+        <div class="label">זכוכית</div>
+      </div>
+      <div class="bin brown" data-bin="brown">
+        <div class="top-rim"></div><div class="mouth"></div>
+        <div class="recycle-icon">♻️</div>
+        <div class="label">אורגני</div>
+      </div>
+    </div>
+
+    <div class="countdown hidden" id="countdown"><div class="big" id="cdText">3</div></div>
+  </section>
+
+  <!-- ============ GAME OVER SCREEN ============ -->
+  <section class="screen over hidden" id="overScreen">
+    <div class="over-card">
+      <div class="big-emoji" id="overEmoji">🎉</div>
+      <h2 id="overTitle">כל הכבוד!</h2>
+      <div id="overSubtitle" style="font-size:14px;opacity:.7;margin-bottom:4px">סיימת את המשחק</div>
+      <div class="final-score" id="finalScore">0</div>
+      <div style="font-size:13px;opacity:.7">נקודות</div>
+      <div class="stats">
+        <div class="st">נכונים<b id="finalCorrect">0</b></div>
+        <div class="st">טעויות<b id="finalWrong">0</b></div>
+      </div>
+      <div class="best" id="bestDisplay">⭐ שיא אישי: 0</div>
+      <button class="bigbtn" onclick="startGame()">🔁 שחק שוב</button>
+      <button class="bigbtn" style="background:#fff;color:#0b2e1c;border:3px solid #0b2e1c;box-shadow:0 6px 0 #0b2e1c33;margin-top:10px"
+        onclick="showStart()">↩️ חזרה למסך הראשי</button>
+    </div>
+  </section>
+</div>
+
+<script>
+/* =====================================================
+   משחק המחזור — Drag & Drop falling-items game
+   ===================================================== */
+
+// 30+ items with emoji + correct bin
+const ITEMS = [
+  // ORANGE — plastic + metal
+  {emoji:'🥤', bin:'orange', name:'כוס פלסטיק'},
+  {emoji:'🍾', bin:'green',  name:'בקבוק זכוכית'},   // tricky! glass
+  {emoji:'🥫', bin:'orange', name:'שימורי פחית'},
+  {emoji:'🧴', bin:'orange', name:'בקבוק שמפו'},
+  {emoji:'🧃', bin:'orange', name:'קרטון משקה'},
+  {emoji:'💧', bin:'orange', name:'בקבוק מים'},
+  {emoji:'🥛', bin:'orange', name:'חלב בקרטון'},
+  {emoji:'🧀', bin:'orange', name:'גבינה בעטיפה'},
+  // BLUE — paper + cardboard
+  {emoji:'📰', bin:'blue',   name:'עיתון'},
+  {emoji:'📄', bin:'blue',   name:'דף נייר'},
+  {emoji:'📦', bin:'blue',   name:'קופסת קרטון'},
+  {emoji:'📚', bin:'blue',   name:'ספרים'},
+  {emoji:'🧾', bin:'blue',   name:'חשבונית נייר'},
+  {emoji:'📒', bin:'blue',   name:'מחברת'},
+  {emoji:'🎁', bin:'blue',   name:'אריזת מתנה'},
+  // GREEN — glass
+  {emoji:'🍷', bin:'green',  name:'בקבוק יין'},
+  {emoji:'🍺', bin:'green',  name:'בקבוק בירה'},
+  {emoji:'🍯', bin:'green',  name:'צנצנת דבש'},
+  {emoji:'🥂', bin:'green',  name:'גביע שמפניה'},
+  // BROWN — organic
+  {emoji:'🍌', bin:'brown',  name:'קליפת בננה'},
+  {emoji:'🍎', bin:'brown',  name:'תפוח עץ'},
+  {emoji:'🥕', bin:'brown',  name:'גזר'},
+  {emoji:'🍅', bin:'brown',  name:'עגבנייה'},
+  {emoji:'🥬', bin:'brown',  name:'חסה'},
+  {emoji:'🍊', bin:'brown',  name:'תפוז'},
+  {emoji:'🥒', bin:'brown',  name:'מלפפון'},
+  {emoji:'🌽', bin:'brown',  name:'תירס טרי'},
+  {emoji:'🍇', bin:'brown',  name:'ענבים'},
+  // More mixed
+  {emoji:'🍪', bin:'blue',   name:'חבילת עוגיות'},
+  {emoji:'🥡', bin:'orange', name:'קופסת אוכל'},
+  {emoji:'🧴', bin:'orange', name:'סבון נוזלי'},
+];
+
+const BIN_NAMES = {
+  orange:'הפח הכתום (פלסטיק + מתכות)',
+  blue:  'הפח הכחול (נייר + קרטון)',
+  green: 'הפח הירוק (זכוכית)',
+  brown: 'הפח החום (אורגני)'
+};
+
+const TOTAL_ITEMS = 20;
+const FALL_DURATION = 12000;  // 12 seconds for an item to fall the full screen (was 7)
+const FALL_DURATION_HARD = 9000; // even at "harder" pace it's still calm (was 5)
+const SPAWN_INTERVAL = 2800;  // ms between spawns (was 1800)
+
+// Background floating recycle bits
+(function bg(){
+  const emojis=['♻️','🍾','📦','🥤','🍶','🥫','📄','🔋','🌿'];
+  const el=document.getElementById('bgEmojis');
+  for(let i=0;i<22;i++){
+    const s=document.createElement('span');
+    s.textContent=emojis[i%emojis.length];
+    s.style.left=Math.random()*100+'%';
+    s.style.top=Math.random()*100+'%';
+    s.style.animationDelay=(Math.random()*8)+'s';
+    s.style.animationDuration=(10+Math.random()*10)+'s';
+    el.appendChild(s);
+  }
+})();
+
+let state = null;
+
+function showStart(){
+  document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('overScreen').classList.add('hidden');
+  state = null;
+}
+
+async function startGame(){
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('overScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+
+  state = {
+    score: 0,
+    lives: 3,
+    spawned: 0,
+    handled: 0,        // correct + wrong (counts toward 20)
+    correct: 0,
+    wrong: 0,
+    combo: 0,
+    items: [],         // live falling items
+    spawnTimer: null,
+    gameOver: false
+  };
+  updateHUD();
+  clearZone();
+
+  // 3-2-1-GO countdown
+  await runCountdown();
+
+  // start spawning
+  spawnLoop();
+}
+
+function runCountdown(){
+  return new Promise(resolve=>{
+    const cd = document.getElementById('countdown');
+    const txt = document.getElementById('cdText');
+    cd.classList.remove('hidden');
+    const seq = ['3','2','1','קדימה!'];
+    let i = 0;
+    function step(){
+      if(i >= seq.length){ cd.classList.add('hidden'); resolve(); return; }
+      txt.textContent = seq[i];
+      // restart animation
+      txt.style.animation = 'none';
+      void txt.offsetWidth;
+      txt.style.animation = 'countPop .8s ease-out forwards';
+      i++;
+      setTimeout(step, 800);
+    }
+    step();
+  });
+}
+
+function spawnLoop(){
+  if(!state || state.gameOver) return;
+  if(state.spawned >= TOTAL_ITEMS) return; // no more spawns
+  spawnItem();
+  state.spawned++;
+  if(state.spawned < TOTAL_ITEMS){
+    // Speed up the spawn interval as game progresses
+    const factor = Math.max(0.5, 1 - state.spawned / 30);
+    state.spawnTimer = setTimeout(spawnLoop, SPAWN_INTERVAL * factor);
+  }
+}
+
+function spawnItem(){
+  const zone = document.getElementById('zone');
+  const def = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+  const el = document.createElement('div');
+  el.className = 'item';
+  el.textContent = def.emoji;
+  el.dataset.bin = def.bin;
+  el.dataset.name = def.name;
+
+  // Random horizontal position (avoid edges) — wider margins for bigger items
+  const zoneW = zone.clientWidth;
+  const itemW = 100;
+  const x = 10 + Math.random() * Math.max(20, zoneW - itemW - 10);
+  el.style.left = x + 'px';
+  el.style.top = '-100px';
+
+  zone.appendChild(el);
+
+  // Animate falling
+  const duration = state.spawned > 12 ? FALL_DURATION_HARD : FALL_DURATION;
+  const fallEnd = zone.clientHeight + 40;
+  const startTime = performance.now();
+
+  el._anim = {
+    startTime, duration, x, startY:-100, endY:fallEnd,
+    paused:false, pauseOffset:0
+  };
+
+  state.items.push(el);
+
+  // Make it draggable
+  enableDrag(el);
+}
+
+function tickItems(now){
+  // Keep the loop alive ALWAYS — only skip update logic when not playing
+  if(state && !state.gameOver){
+    for(let i = state.items.length - 1; i >= 0; i--){
+      const el = state.items[i];
+      const a = el._anim;
+      if(!a) continue;
+      if(a.paused || el.classList.contains('dragging')) continue;
+      const elapsed = now - a.startTime - a.pauseOffset;
+      const t = elapsed / a.duration;
+      if(t >= 1){
+        // Item reached the floor — missed it!
+        onMissed(el);
+        state.items.splice(i,1);
+        continue;
+      }
+      const y = a.startY + (a.endY - a.startY) * t;
+      el.style.top = y + 'px';
+    }
+  }
+  requestAnimationFrame(tickItems);
+}
+requestAnimationFrame(tickItems);
+
+/* ---------- Drag handling (pointer events — works for mouse + touch) ---------- */
+function enableDrag(el){
+  let startX, startY, baseLeft, baseTop, pointerId = null, dragging=false;
+
+  function onDown(e){
+    if(state && state.gameOver) return;
+    e.preventDefault();
+    pointerId = e.pointerId;
+    el.setPointerCapture(pointerId);
+    const rect = el.getBoundingClientRect();
+    const zoneRect = document.getElementById('zone').getBoundingClientRect();
+    baseLeft = rect.left - zoneRect.left;
+    baseTop = rect.top - zoneRect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+    dragging = true;
+    el.classList.add('dragging');
+    // Pause falling while dragging
+    el._anim.paused = true;
+    el._anim._pauseStart = performance.now();
+    // Set absolute position to current location
+    el.style.left = baseLeft + 'px';
+    el.style.top = baseTop + 'px';
+  }
+  function onMove(e){
+    if(!dragging) return;
+    e.preventDefault();
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    el.style.left = (baseLeft + dx) + 'px';
+    el.style.top  = (baseTop + dy) + 'px';
+    highlightBinUnderPointer(e.clientX, e.clientY);
+  }
+  function onUp(e){
+    if(!dragging) return;
+    dragging = false;
+    el.classList.remove('dragging');
+    try{ el.releasePointerCapture(pointerId); }catch(_){}
+    clearBinHighlight();
+
+    const targetBin = findBinAt(e.clientX, e.clientY);
+    if(targetBin){
+      handleDrop(el, targetBin);
+    } else {
+      // Resume falling from current position
+      const rect = el.getBoundingClientRect();
+      const zoneRect = document.getElementById('zone').getBoundingClientRect();
+      const currentY = rect.top - zoneRect.top;
+      el._anim.startY = currentY;
+      el._anim.startTime = performance.now();
+      el._anim.pauseOffset = 0;
+      el._anim.paused = false;
+    }
+  }
+
+  el.addEventListener('pointerdown', onDown);
+  el.addEventListener('pointermove', onMove);
+  el.addEventListener('pointerup',   onUp);
+  el.addEventListener('pointercancel', onUp);
+}
+
+function findBinAt(x, y){
+  const els = document.elementsFromPoint(x, y);
+  for(const el of els){
+    if(el.classList && el.classList.contains('bin') && el.dataset.bin){
+      return el.dataset.bin;
+    }
+  }
+  return null;
+}
+
+function highlightBinUnderPointer(x, y){
+  document.querySelectorAll('.bin').forEach(b=>b.classList.remove('active'));
+  const binName = findBinAt(x, y);
+  if(binName){
+    document.querySelector('.bin[data-bin="'+binName+'"]').classList.add('active');
+  }
+}
+function clearBinHighlight(){
+  document.querySelectorAll('.bin').forEach(b=>b.classList.remove('active'));
+}
+
+/* ---------- Score handling ---------- */
+function handleDrop(el, targetBin){
+  const correctBin = el.dataset.bin;
+  const rect = el.getBoundingClientRect();
+  const popX = rect.left + rect.width/2;
+  const popY = rect.top;
+
+  if(targetBin === correctBin){
+    onCorrect(el, popX, popY);
+  } else {
+    onWrong(el, popX, popY);
+  }
+  // Remove from items list
+  const idx = state.items.indexOf(el);
+  if(idx >= 0) state.items.splice(idx, 1);
+}
+
+function onCorrect(el, x, y){
+  state.combo++;
+  state.correct++;
+  state.handled++;
+  const bonus = Math.min(state.combo, 5);
+  const points = 10 + (bonus - 1) * 5;
+  state.score += points;
+  el.classList.add('correct');
+  showPopText('+' + points + (bonus > 1 ? ' 🔥x' + bonus : ''), x, y, 'good');
+  if(navigator.vibrate){ try{ navigator.vibrate(40); }catch(e){} }
+  setTimeout(()=>{ try{ el.remove(); }catch(_){} }, 500);
+  updateHUD();
+  checkGameProgress();
+}
+
+function onWrong(el, x, y){
+  state.combo = 0;
+  state.wrong++;
+  state.handled++;
+  state.lives--;
+  el.classList.add('wrong');
+  showPopText('❌ ' + BIN_NAMES[el.dataset.bin], x, y, 'bad');
+  if(navigator.vibrate){ try{ navigator.vibrate([100, 50, 100]); }catch(e){} }
+  flashHeartLost();
+  setTimeout(()=>{ try{ el.remove(); }catch(_){} }, 500);
+  updateHUD();
+  if(state.lives <= 0){
+    endGame(false);
+    return;
+  }
+  checkGameProgress();
+}
+
+function onMissed(el){
+  // Item fell off the bottom — counts as a wrong + life lost
+  state.combo = 0;
+  state.wrong++;
+  state.handled++;
+  state.lives--;
+  const rect = el.getBoundingClientRect();
+  showPopText('💔 פספסת!', rect.left + 30, rect.top - 30, 'bad');
+  if(navigator.vibrate){ try{ navigator.vibrate([150,80,150]); }catch(e){} }
+  flashHeartLost();
+  try{ el.remove(); }catch(_){}
+  updateHUD();
+  if(state.lives <= 0){
+    endGame(false);
+    return;
+  }
+  checkGameProgress();
+}
+
+function checkGameProgress(){
+  if(state.handled >= TOTAL_ITEMS && state.items.length === 0){
+    endGame(true);
+  }
+}
+
+function showPopText(txt, x, y, cls){
+  const el = document.createElement('div');
+  el.className = 'pop-text ' + cls;
+  el.textContent = txt;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
+}
+
+function updateHUD(){
+  document.getElementById('scoreNum').textContent = state.score;
+  document.getElementById('progressNum').textContent = state.handled + '/' + TOTAL_ITEMS;
+  const heartsEl = document.getElementById('hearts');
+  let h = '';
+  for(let i=0;i<3;i++){
+    if(i < state.lives) h += '❤️';
+    else h += '<span class="heart-lost">❤️</span>';
+  }
+  heartsEl.innerHTML = h;
+}
+
+function flashHeartLost(){
+  const heartsEl = document.getElementById('hearts');
+  heartsEl.classList.add('heart-pop');
+  setTimeout(()=>heartsEl.classList.remove('heart-pop'), 400);
+}
+
+function clearZone(){
+  document.getElementById('zone').innerHTML = '';
+  if(state) state.items = [];
+}
+
+function endGame(won){
+  if(!state) return;
+  state.gameOver = true;
+  if(state.spawnTimer) clearTimeout(state.spawnTimer);
+  // Remove any remaining items
+  document.querySelectorAll('.item').forEach(el=>el.remove());
+
+  // Save best score
+  let best = 0;
+  try{ best = parseInt(localStorage.getItem('recycleBest') || '0', 10); }catch(_){}
+  const isNewRecord = state.score > best;
+  if(isNewRecord){
+    try{ localStorage.setItem('recycleBest', String(state.score)); }catch(_){}
+    best = state.score;
+  }
+
+  // Pick title + emoji based on performance
+  const acc = state.handled > 0 ? state.correct / state.handled : 0;
+  let emoji, title, sub;
+  if(!won){
+    emoji = '💔'; title = 'נגמרו החיים'; sub = 'נסה שוב, אתה יכול!';
+  } else if(acc >= 0.9){
+    emoji = '🏆'; title = 'אלוף המחזור!'; sub = 'דיוק מדהים';
+  } else if(acc >= 0.7){
+    emoji = '🎉'; title = 'כל הכבוד!'; sub = 'עבודה טובה';
+  } else {
+    emoji = '👍'; title = 'סיימת!'; sub = 'נסה שוב לדיוק טוב יותר';
+  }
+
+  document.getElementById('overEmoji').textContent = emoji;
+  document.getElementById('overTitle').textContent = title;
+  document.getElementById('overSubtitle').textContent = sub;
+  document.getElementById('finalScore').textContent = state.score;
+  document.getElementById('finalCorrect').textContent = state.correct;
+  document.getElementById('finalWrong').textContent = state.wrong;
+  document.getElementById('bestDisplay').textContent =
+    (isNewRecord ? '🥇 שיא חדש! ' : '⭐ שיא אישי: ') + best;
+
+  document.getElementById('overScreen').classList.remove('hidden');
+}
+
+// Re-position falling items if window resizes
+window.addEventListener('resize', ()=>{
+  if(state && state.items){
+    const zoneW = document.getElementById('zone').clientWidth;
+    state.items.forEach(el=>{
+      const left = parseFloat(el.style.left || '0');
+      if(left > zoneW - 100) el.style.left = (zoneW - 100) + 'px';
+    });
+  }
+});
+
+// Prevent page scroll while playing
+document.addEventListener('touchmove', (e)=>{
+  if(state && !state.gameOver) e.preventDefault();
+}, {passive:false});
+</script>
+</body>
+</html>
